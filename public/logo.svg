@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" version="1.2" baseProfile="tiny-ps" xmlns="http://www.w3.org/2000/svg">
+  <title>Horizon CRM</title>
+  
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="95" fill="#f8f9fa" stroke="#3b82f6" stroke-width="3"/>
+  
+  <!-- Horizon Line -->
+  <path d="M30,110 Q60,95 100,105 Q140,115 170,100" stroke="#3b82f6" stroke-width="4" fill="none"/>
+  
+  <!-- Customer/Business Node Left -->
+  <circle cx="65" cy="70" r="12" fill="#3b82f6"/>
+  
+  <!-- Customer/Business Node Right -->
+  <circle cx="135" cy="70" r="12" fill="#3b82f6"/>
+  
+  <!-- Customer/Business Node Bottom -->
+  <circle cx="100" cy="130" r="12" fill="#3b82f6"/>
+  
+  <!-- Connection Lines -->
+  <line x1="65" y1="70" x2="135" y2="70" stroke="#3b82f6" stroke-width="2.5"/>
+  <line x1="65" y1="70" x2="100" y2="130" stroke="#3b82f6" stroke-width="2.5"/>
+  <line x1="135" y1="70" x2="100" y2="130" stroke="#3b82f6" stroke-width="2.5"/>
+  
+  <!-- Smaller Customer Nodes -->
+  <circle cx="44" cy="90" r="8" fill="#60a5fa"/>
+  <circle cx="156" cy="90" r="8" fill="#60a5fa"/>
+  <circle cx="80" cy="150" r="8" fill="#60a5fa"/>
+  <circle cx="120" cy="150" r="8" fill="#60a5fa"/>
+  
+  <!-- Text (Optional - Remove if you prefer icon only) -->
+  <text x="100" y="180" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#3b82f6">HORIZON CRM</text>
+</svg> 

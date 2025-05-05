@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 
@@ -63,21 +64,18 @@ export default function Navigation() {
           </div>
           <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
             <div className="flex flex-shrink-0 items-center">
-              <Link href="/" className="text-white font-bold text-xl">
-                Horizon CRM
+              <Link href="/" className="flex items-center">
+                <Image
+                  src="/logo.svg"
+                  alt="Horizon CRM Logo"
+                  width={40}
+                  height={40}
+                  className="mr-2"
+                />
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:block">
               <div className="flex space-x-4">
-                {/* Always visible navigation links */}
-                <Link
-                  href="/"
-                  className={`${isActive(
-                    "/"
-                  )} text-white rounded-md px-3 py-2 text-sm font-medium`}>
-                  Home
-                </Link>
-
                 {/* Navigation links for authenticated users */}
                 {status === "authenticated" && (
                   <>
@@ -136,14 +134,6 @@ export default function Navigation() {
         className={`${isMobileMenuOpen ? "block" : "hidden"} sm:hidden`}
         id="mobile-menu">
         <div className="space-y-1 px-2 pb-3 pt-2">
-          <Link
-            href="/"
-            className={`${isActive(
-              "/"
-            )} text-white block rounded-md px-3 py-2 text-base font-medium`}>
-            Home
-          </Link>
-
           {/* Mobile navigation links for authenticated users */}
           {status === "authenticated" && (
             <>

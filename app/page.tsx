@@ -24,7 +24,7 @@ export default function Home() {
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 lg:flex-row lg:justify-start">
-            {isAuthenticated ? (
+            {isAuthenticated && (
               <>
                 <Link
                   href="/dashboard"
@@ -40,19 +40,6 @@ export default function Home() {
                   href="/dashboard/tasks"
                   className="rounded-lg border border-blue-600 px-6 py-3 font-medium text-blue-600 hover:bg-blue-50">
                   Manage Tasks
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700">
-                  Sign In
-                </Link>
-                <Link
-                  href="/login"
-                  className="rounded-lg border border-blue-600 px-6 py-3 font-medium text-blue-600 hover:bg-blue-50">
-                  Create an Account
                 </Link>
               </>
             )}
