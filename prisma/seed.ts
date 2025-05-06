@@ -24,7 +24,8 @@ async function main() {
   // Create admin user
   await prisma.user.create({
     data: {
-      name: "Admin User",
+      firstName: "Admin",
+      lastName: "User",
       email: "admin@horizon-crm.com",
       password: defaultPassword,
       role: Role.ADMIN,
@@ -34,7 +35,8 @@ async function main() {
   // Create manager user
   const manager = await prisma.user.create({
     data: {
-      name: "Manager User",
+      firstName: "Manager",
+      lastName: "User",
       email: "manager@horizon-crm.com",
       password: defaultPassword,
       role: Role.MANAGER,
@@ -44,7 +46,8 @@ async function main() {
   // Create regular user
   const user = await prisma.user.create({
     data: {
-      name: "Sales Representative",
+      firstName: "Sales",
+      lastName: "Representative",
       email: "sales@horizon-crm.com",
       password: defaultPassword,
       role: Role.USER,
@@ -54,7 +57,8 @@ async function main() {
   // Create contacts
   const lead = await prisma.contact.create({
     data: {
-      name: "John Smith",
+      firstName: "John",
+      lastName: "Smith",
       email: "john@example.com",
       phone: "555-123-4567",
       company: "ABC Corp",
@@ -65,7 +69,8 @@ async function main() {
 
   const prospect = await prisma.contact.create({
     data: {
-      name: "Sarah Johnson",
+      firstName: "Sarah",
+      lastName: "Johnson",
       email: "sarah@example.com",
       phone: "555-987-6543",
       company: "XYZ Industries",
@@ -76,7 +81,8 @@ async function main() {
 
   const customer = await prisma.contact.create({
     data: {
-      name: "Michael Brown",
+      firstName: "Michael",
+      lastName: "Brown",
       email: "michael@example.com",
       phone: "555-456-7890",
       company: "Acme Inc",
@@ -87,7 +93,8 @@ async function main() {
 
   const inactive = await prisma.contact.create({
     data: {
-      name: "Emily Davis",
+      firstName: "Emily",
+      lastName: "Davis",
       email: "emily@example.com",
       phone: "555-789-0123",
       company: "Old Client LLC",

@@ -43,7 +43,8 @@ export async function createContact(
     // Create the contact in the database
     const contact = await prisma.contact.create({
       data: {
-        name: data.name,
+        firstName: data.firstName,
+        lastName: data.lastName,
         email: data.email || null,
         phone: data.phone || null,
         company: data.company || null,
@@ -52,14 +53,18 @@ export async function createContact(
       },
       select: {
         id: true,
-        name: true,
+        firstName: true,
+        lastName: true,
       },
     });
 
     return {
       success: true,
       message: "Contact created successfully!",
-      contact,
+      contact: {
+        id: contact.id,
+        name: `${contact.firstName} ${contact.lastName}`,
+      },
     };
   } catch (error) {
     console.error("Failed to create contact:", error);

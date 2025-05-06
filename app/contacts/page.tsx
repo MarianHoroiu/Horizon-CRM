@@ -49,7 +49,7 @@ export default async function ContactsPage() {
             {contacts.map(contact => (
               <tr key={contact.id}>
                 <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                  {contact.name}
+                  {contact.firstName} {contact.lastName}
                 </td>
                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                   {contact.email}
@@ -72,7 +72,7 @@ export default async function ContactsPage() {
                   </span>
                 </td>
                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                  {contact.assignedTo.name}
+                  {contact.assignedTo.firstName} {contact.assignedTo.lastName}
                 </td>
               </tr>
             ))}

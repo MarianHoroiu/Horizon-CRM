@@ -12,7 +12,8 @@ datasource db {
 
 model User {
   id            String    @id @default(cuid())
-  name          String?
+  firstName     String?
+  lastName      String?
   email         String    @unique
   emailVerified DateTime? @map("email_verified")
   password      String
@@ -77,7 +78,8 @@ model VerificationToken {
 
 model Contact {
   id         String   @id @default(uuid())
-  name       String
+  firstName  String
+  lastName   String
   email      String?
   phone      String?
   company    String?

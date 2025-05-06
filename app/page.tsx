@@ -48,8 +48,7 @@ export default function Home() {
           {isAuthenticated && (
             <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-100">
               <p className="text-blue-800">
-                Welcome back, {session?.user?.name || session?.user?.email}! You
-                are signed in.
+                {`Welcome back, ${session.user.firstName} ${session.user.lastName}.`}
               </p>
             </div>
           )}

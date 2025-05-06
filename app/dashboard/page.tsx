@@ -32,10 +32,10 @@ export default function DashboardPage() {
       {session?.user && (
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4">
-            Welcome, {session.user.name || session.user.email}
+            {`Welcome, ${session.user.firstName} ${session.user.lastName}.`}
           </h2>
           <p className="text-gray-600 mb-4">
-            You are signed in as {session.user.email}
+            You are signed in as: {session.user.role}
           </p>
 
           <div className="mt-8">
