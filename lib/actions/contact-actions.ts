@@ -45,11 +45,14 @@ export async function createContact(
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
-        email: data.email || null,
-        phone: data.phone || null,
-        company: data.company || null,
+        email: data.email,
+        phone: data.phone,
+        company: data.company,
         status: data.status,
-        userId: data.userId,
+        userId:
+          data.userId ||
+          process.env.DEFAULT_USER_ID ||
+          "DEFAULT_USER_ID_PLACEHOLDER",
       },
       select: {
         id: true,
@@ -101,11 +104,14 @@ export async function createContactTyped(
       data: {
         firstName: validatedData.firstName,
         lastName: validatedData.lastName,
-        email: validatedData.email || null,
-        phone: validatedData.phone || null,
-        company: validatedData.company || null,
+        email: validatedData.email,
+        phone: validatedData.phone,
+        company: validatedData.company,
         status: validatedData.status,
-        userId: validatedData.userId,
+        userId:
+          validatedData.userId ||
+          process.env.DEFAULT_USER_ID ||
+          "DEFAULT_USER_ID_PLACEHOLDER",
       },
       select: {
         id: true,

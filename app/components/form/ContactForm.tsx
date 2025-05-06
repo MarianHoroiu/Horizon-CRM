@@ -17,7 +17,7 @@ const contactSchema = z.object({
     .email({ message: "Invalid email address" }),
   phone: z.string().min(1, { message: "Phone number is required" }).max(20),
   company: z.string().min(1, { message: "Company is required" }).max(100),
-  status: z.enum(["LEAD", "CLIENT", "PROSPECT", "INACTIVE"]),
+  status: z.enum(["LEAD", "PROSPECT", "CUSTOMER", "INACTIVE"]),
 });
 
 // Define the type for our form
@@ -59,9 +59,9 @@ export default function ContactForm({ onSuccess, onCancel }: ContactFormProps) {
         ...data,
         firstName: DOMPurify.sanitize(data.firstName),
         lastName: DOMPurify.sanitize(data.lastName),
-        email: data.email ? DOMPurify.sanitize(data.email) : null,
-        phone: data.phone ? DOMPurify.sanitize(data.phone) : null,
-        company: data.company ? DOMPurify.sanitize(data.company) : null,
+        email: DOMPurify.sanitize(data.email),
+        phone: DOMPurify.sanitize(data.phone),
+        company: DOMPurify.sanitize(data.company),
       };
 
       // Submit sanitized data
@@ -218,7 +218,7 @@ export default function ContactForm({ onSuccess, onCancel }: ContactFormProps) {
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
           <option value="LEAD">Lead</option>
           <option value="PROSPECT">Prospect</option>
-          <option value="CLIENT">Client</option>
+          <option value="CUSTOMER">Customer</option>
           <option value="INACTIVE">Inactive</option>
         </select>
         {errors.status && (

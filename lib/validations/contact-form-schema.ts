@@ -5,37 +5,20 @@ import { StatusSchema } from "./schemas";
  * Contact form validation schema
  */
 export const ContactFormSchema = z.object({
-  firstName: z
-    .string()
-    .min(2, { message: "First name must be at least 2 characters" })
-    .max(50, { message: "First name cannot exceed 50 characters" }),
-  lastName: z
-    .string()
-    .min(2, { message: "Last name must be at least 2 characters" })
-    .max(50, { message: "Last name cannot exceed 50 characters" }),
+  firstName: z.string().min(1, { message: "First name is required" }).max(100),
+  lastName: z.string().min(1, { message: "Last name is required" }).max(100),
   email: z
     .string()
-    .email({ message: "Please enter a valid email address" })
-    .optional()
-    .or(z.literal("")),
-  phone: z
-    .string()
-    .regex(/^[0-9\-\+\(\)\s]{7,20}$/, {
-      message: "Please enter a valid phone number",
-    })
-    .optional()
-    .or(z.literal("")),
-  company: z
-    .string()
-    .max(100, { message: "Company name cannot exceed 100 characters" })
-    .optional()
-    .or(z.literal("")),
+    .min(1, { message: "Email is required" })
+    .email({ message: "Invalid email address" }),
+  phone: z.string().min(1, { message: "Phone number is required" }).max(20),
+  company: z.string().min(1, { message: "Company is required" }).max(100),
   status: StatusSchema,
-  userId: z.string().min(1, { message: "Please select a user" }),
+  userId: z.string().optional(),
 });
 
 /**
- * Type inference from the schema
+ * Type for the values from the contact form schema
  */
 export type ContactFormValues = z.infer<typeof ContactFormSchema>;
 
