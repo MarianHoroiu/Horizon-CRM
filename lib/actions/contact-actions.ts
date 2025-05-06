@@ -12,7 +12,7 @@ type CreateContactResult = {
   success: boolean;
   message: string;
   errors?: Record<string, string>;
-  contact?: { id: string; name: string };
+  contact?: { id: string; firstName: string; lastName: string };
 };
 
 /**
@@ -63,7 +63,8 @@ export async function createContact(
       message: "Contact created successfully!",
       contact: {
         id: contact.id,
-        name: `${contact.firstName} ${contact.lastName}`,
+        firstName: contact.firstName,
+        lastName: contact.lastName,
       },
     };
   } catch (error) {
@@ -98,7 +99,8 @@ export async function createContactTyped(
   try {
     const contact = await prisma.contact.create({
       data: {
-        name: validatedData.name,
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
         email: validatedData.email || null,
         phone: validatedData.phone || null,
         company: validatedData.company || null,
@@ -107,14 +109,19 @@ export async function createContactTyped(
       },
       select: {
         id: true,
-        name: true,
+        firstName: true,
+        lastName: true,
       },
     });
 
     return {
       success: true,
       message: "Contact created successfully!",
-      contact,
+      contact: {
+        id: contact.id,
+        firstName: contact.firstName,
+        lastName: contact.lastName,
+      },
     };
   } catch (error) {
     console.error("Failed to create contact:", error);

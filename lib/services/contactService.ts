@@ -45,3 +45,28 @@ export const getContacts = async () => {
     throw error;
   }
 };
+
+// Create a new contact with proper error handling
+export const createContact = async (contactData: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  company: string;
+  status: string;
+}) => {
+  try {
+    const response = await fetch("/api/protected/contacts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(contactData),
+    });
+
+    return handleResponse(response);
+  } catch (error) {
+    console.error("Error creating contact:", error);
+    throw error;
+  }
+};

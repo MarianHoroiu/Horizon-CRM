@@ -78,10 +78,10 @@ export default async function TasksPage() {
                     : "N/A"}
                 </td>
                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                  {task.assignedTo.name}
+                  {task.assignedTo.firstName} {task.assignedTo.lastName}
                 </td>
                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                  {task.contact.name}
+                  {task.contact.firstName} {task.contact.lastName}
                 </td>
               </tr>
             ))}

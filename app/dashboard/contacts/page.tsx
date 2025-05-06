@@ -11,6 +11,7 @@ import { createPortal } from "react-dom";
 import { useSession } from "next-auth/react";
 import { searchContacts, getContacts } from "@/lib/services/contactService";
 import debounce from "lodash/debounce";
+import AddContactModal from "@/app/components/form/AddContactModal";
 
 type Contact = {
   id: string;
@@ -29,6 +30,7 @@ export default function ContactsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAddContactModal, setShowAddContactModal] = useState(false);
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -194,6 +196,12 @@ export default function ContactsPage() {
     setShowCompanyFilter(false);
   };
 
+  // Handle new contact creation success
+  const handleContactCreationSuccess = () => {
+    setShowAddContactModal(false);
+    fetchContacts(); // Refresh the contacts list
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -295,231 +303,293 @@ export default function ContactsPage() {
   };
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">Contacts</h1>
-
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">All Contacts</h2>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-            Add Contact
-          </button>
+    <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
+      {/* Page header */}
+      <div className="sm:flex sm:justify-between sm:items-center mb-8">
+        {/* Left: Title */}
+        <div className="mb-4 sm:mb-0">
+          <h1 className="text-2xl md:text-3xl text-slate-800 font-bold">
+            Contacts
+          </h1>
         </div>
 
-        <div className="mb-6">
+        {/* Right: Actions */}
+        <div className="grid grid-flow-col sm:auto-cols-max justify-start sm:justify-end gap-2">
+          {/* Search */}
           <div className="relative">
+            <label htmlFor="search-contacts" className="sr-only">
+              Search
+            </label>
             <input
-              type="text"
-              placeholder="Search contacts..."
-              className="w-full pl-10 pr-4 py-2 border rounded-lg"
+              id="search-contacts"
+              className="block w-full p-2.5 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
+              type="search"
+              placeholder="Search by name, email, company..."
               value={searchQuery}
               onChange={handleSearchChange}
-              aria-label="Search contacts"
             />
-            <div className="absolute left-3 top-2.5">
+            <button
+              className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"
+              type="button"
+              aria-label="Search">
               <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
+                className="w-4 h-4 text-gray-500"
+                viewBox="0 0 16 16"
+                xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 14c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7zM7 2C4.243 2 2 4.243 2 7s2.243 5 5 5 5-2.243 5-5-2.243-5-5-5z" />
+                <path d="M15.707 14.293L13.314 11.9a8.019 8.019 0 01-1.414 1.414l2.393 2.393a.997.997 0 001.414 0 .999.999 0 000-1.414z" />
               </svg>
-            </div>
+            </button>
           </div>
-        </div>
 
+          {/* Add contact button */}
+          <button
+            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            onClick={() => setShowAddContactModal(true)}>
+            <svg
+              className="w-4 h-4 mr-2"
+              viewBox="0 0 16 16"
+              fill="currentColor">
+              <path d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z" />
+            </svg>
+            <span>Add Contact</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Add Contact Modal */}
+      {isMounted && showAddContactModal && (
+        <AddContactModal
+          isOpen={showAddContactModal}
+          onClose={() => setShowAddContactModal(false)}
+          onSuccess={handleContactCreationSuccess}
+        />
+      )}
+
+      {/* Contacts table */}
+      <div className="bg-white shadow overflow-hidden rounded-lg">
         {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4">
+          <div className="p-4 bg-red-100 text-red-700 border-l-4 border-red-500">
             {error}
           </div>
         )}
 
-        <div className="border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Phone
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                    data-filter="company"
-                    ref={companyFilterRef}>
-                    <div className="flex items-center gap-1">
-                      <span className={companyFilter ? "text-blue-600" : ""}>
-                        Company
-                      </span>
-                      <button
-                        onClick={() => setShowCompanyFilter(!showCompanyFilter)}
-                        className={`${
-                          companyFilter
-                            ? "text-blue-600"
-                            : "text-gray-400 hover:text-gray-600"
-                        }`}
-                        aria-label="Filter by company">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-
-                    {/* Render company dropdown through portal */}
-                    {showCompanyFilter && <CompanyFilterDropdown />}
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                    data-filter="status"
-                    ref={statusFilterRef}>
-                    <div className="flex items-center gap-1">
-                      <span className={statusFilter ? "text-blue-600" : ""}>
-                        Status
-                      </span>
-                      <button
-                        onClick={() => setShowStatusFilter(!showStatusFilter)}
-                        className={`${
-                          statusFilter
-                            ? "text-blue-600"
-                            : "text-gray-400 hover:text-gray-600"
-                        }`}
-                        aria-label="Filter by status">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-
-                    {/* Render status dropdown through portal */}
-                    {showStatusFilter && <StatusFilterDropdown />}
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {isLoading ? (
+        {isLoading ? (
+          <div className="text-center p-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <p className="mt-2 text-sm text-gray-500">Loading contacts...</p>
+          </div>
+        ) : contacts.length === 0 ? (
+          <div className="text-center p-12">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true">
+              <path
+                vectorEffect="non-scaling-stroke"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+              />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              No contacts found
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {searchQuery || statusFilter || companyFilter
+                ? "Try adjusting your search or filters"
+                : "Get started by creating a new contact"}
+            </p>
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={() => setShowAddContactModal(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                <svg
+                  className="-ml-1 mr-2 h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true">
+                  <path
+                    fillRule="evenodd"
+                    d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Add Contact
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center">
-                      Loading...
-                    </td>
-                  </tr>
-                ) : contacts.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center">
-                      No contacts found
-                    </td>
-                  </tr>
-                ) : (
-                  contacts.map(contact => (
-                    <tr key={contact.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {contact.firstName} {contact.lastName}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
-                          {contact.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
-                          {contact.phone}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
-                          {contact.company}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            contact.status === "LEAD"
-                              ? "bg-blue-100 text-blue-800"
-                              : contact.status === "PROSPECT"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}>
-                          {contact.status}
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Phone
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                      data-filter="company"
+                      ref={companyFilterRef}>
+                      <div className="flex items-center gap-1">
+                        <span className={companyFilter ? "text-blue-600" : ""}>
+                          Company
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900 mr-3">
-                          Edit
+                        <button
+                          onClick={() =>
+                            setShowCompanyFilter(!showCompanyFilter)
+                          }
+                          className={`${
+                            companyFilter
+                              ? "text-blue-600"
+                              : "text-gray-400 hover:text-gray-600"
+                          }`}
+                          aria-label="Filter by company">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                            />
+                          </svg>
                         </button>
-                        <button className="text-red-600 hover:text-red-900">
-                          Delete
+                      </div>
+
+                      {/* Render company dropdown through portal */}
+                      {showCompanyFilter && <CompanyFilterDropdown />}
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                      data-filter="status"
+                      ref={statusFilterRef}>
+                      <div className="flex items-center gap-1">
+                        <span className={statusFilter ? "text-blue-600" : ""}>
+                          Status
+                        </span>
+                        <button
+                          onClick={() => setShowStatusFilter(!showStatusFilter)}
+                          className={`${
+                            statusFilter
+                              ? "text-blue-600"
+                              : "text-gray-400 hover:text-gray-600"
+                          }`}
+                          aria-label="Filter by status">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                            />
+                          </svg>
                         </button>
+                      </div>
+
+                      {/* Render status dropdown through portal */}
+                      {showStatusFilter && <StatusFilterDropdown />}
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center">
+                        Loading...
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : contacts.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center">
+                        No contacts found
+                      </td>
+                    </tr>
+                  ) : (
+                    contacts.map(contact => (
+                      <tr key={contact.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {contact.firstName} {contact.lastName}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">
+                            {contact.email}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">
+                            {contact.phone}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">
+                            {contact.company}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              contact.status === "LEAD"
+                                ? "bg-blue-100 text-blue-800"
+                                : contact.status === "PROSPECT"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}>
+                            {contact.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button className="text-blue-600 hover:text-blue-900 mr-3">
+                            Edit
+                          </button>
+                          <button className="text-red-600 hover:text-red-900">
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-
-        <div className="mt-6 flex justify-between items-center">
-          <div className="text-sm text-gray-500">
-            Showing {contacts.length} of {allContacts.length} contacts
-          </div>
-          <div className="flex space-x-2">
-            <button
-              className="px-3 py-1 border rounded bg-gray-100 text-gray-600"
-              disabled>
-              Previous
-            </button>
-            <button
-              className="px-3 py-1 border rounded bg-gray-100 text-gray-600"
-              disabled>
-              Next
-            </button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

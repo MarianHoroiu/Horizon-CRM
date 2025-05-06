@@ -5,6 +5,9 @@ import type { NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Generate a nonce for CSP
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+
   // Check if the path is a protected route
   const isProtectedRoute =
     pathname.startsWith("/dashboard") || pathname.startsWith("/api/protected");
@@ -55,16 +58,51 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(finalRedirectUrl);
   }
 
-  return NextResponse.next();
+  // Add Content Security Policy header with nonce
+  const cspHeader = `
+    default-src 'self';
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' blob: data:;
+    font-src 'self';
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+    frame-ancestors 'none';
+    connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL || ""};
+    upgrade-insecure-requests;
+  `;
+
+  // Replace newline characters and spaces
+  const contentSecurityPolicyHeaderValue = cspHeader
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  // Add nonce to request headers for access in components
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+
+  // Add CSP header to both request and response
+  requestHeaders.set(
+    "Content-Security-Policy",
+    contentSecurityPolicyHeaderValue
+  );
+
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+
+  response.headers.set(
+    "Content-Security-Policy",
+    contentSecurityPolicyHeaderValue
+  );
+
+  return response;
 }
 
-// Apply middleware to specific paths
+// Apply middleware to specific paths, excluding static assets and prefetches
 export const config = {
-  matcher: [
-    // Protected routes
-    "/dashboard/:path*",
-    "/api/protected/:path*",
-    // Auth routes
-    "/login",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

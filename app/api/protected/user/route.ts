@@ -16,7 +16,8 @@ export async function GET() {
   // Return the user data from the session
   return NextResponse.json({
     user: {
-      name: session.user.name,
+      firstName: session.user.firstName,
+      lastName: session.user.lastName,
       email: session.user.email,
       role: session.user.role,
     },
