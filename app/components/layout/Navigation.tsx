@@ -67,20 +67,6 @@ export default function Navigation() {
                 />
               </Link>
             </div>
-            {!isDashboardPath && (
-              <div className="hidden sm:ml-6 sm:block">
-                <div className="flex space-x-4">
-                  {/* Public navigation links */}
-                  <Link
-                    href="/"
-                    className={`${
-                      pathname === "/" ? "bg-blue-800" : ""
-                    } text-white rounded-md px-3 py-2 text-sm font-medium`}>
-                    Home
-                  </Link>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
@@ -88,7 +74,7 @@ export default function Navigation() {
             {status === "authenticated" ? (
               <div className="flex items-center">
                 <span className="text-white mr-4 hidden sm:block">
-                  {session.user.email}
+                  {session.user.role}
                 </span>
                 <button
                   onClick={handleSignOut}
