@@ -21,6 +21,8 @@
     "@clerk/nextjs": "^6.18.5",
     "@prisma/client": "^5.10.0",
     "bcryptjs": "^2.4.3",
+    "flowbite": "^3.1.2",
+    "flowbite-react": "^0.11.7",
     "next": "15.3.1",
     "next-auth": "^4.24.11",
     "react": "^19.0.0",
@@ -39,7 +41,6 @@
     "eslint-config-next": "15.3.1",
     "eslint-define-config": "^2.1.0",
     "prisma": "^5.10.0",
-    "tailwindcss": "^4",
     "tsx": "^4.7.0",
     "typescript": "^5"
   }
