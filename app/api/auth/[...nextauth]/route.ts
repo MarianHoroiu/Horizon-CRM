@@ -96,6 +96,19 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
+    async redirect({ url, baseUrl }) {
+      // Handle callback URLs correctly, ensuring we respect the original callbackUrl
+      // If the URL starts with the base URL, it's safe
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+      // For absolute URLs that don't start with baseUrl, use the baseUrl (security measure)
+      else if (url.startsWith("http")) {
+        return baseUrl;
+      }
+      // For relative URLs, properly resolve them
+      return new URL(url, baseUrl).toString();
+    },
   },
   secret:
     process.env.NEXTAUTH_SECRET || "default-secret-key-change-in-production",

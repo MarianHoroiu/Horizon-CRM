@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
-import { signIn } from "next-auth/react";
+import React, { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import PasswordInput from "@/app/components/form/PasswordInput";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const error = searchParams.get("error");
@@ -16,27 +18,28 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
 
+  // If already authenticated, redirect
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push(callbackUrl);
+    }
+  }, [status, router, callbackUrl]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setLoginError("");
 
     try {
-      const result = await signIn("credentials", {
-        redirect: false,
+      // Use NextAuth's built-in redirect handling
+      await signIn("credentials", {
+        redirect: true,
+        callbackUrl: callbackUrl,
         email,
         password,
       });
 
-      if (result?.error) {
-        setLoginError("Invalid email or password. Please try again.");
-        setIsLoading(false);
-        return;
-      }
-
-      // Redirect to callback URL or dashboard
-      router.push(callbackUrl);
-      router.refresh();
+      // We won't reach here as redirect is true
     } catch (error) {
       console.error("Login error:", error);
       setLoginError("An unexpected error occurred. Please try again.");
@@ -74,7 +77,7 @@ export default function LoginPage() {
         )}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="-space-y-px rounded-md shadow-sm">
+          <div className="rounded-md shadow-sm space-y-4">
             <div>
               <label htmlFor="email-address" className="sr-only">
                 Email address
@@ -85,7 +88,7 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="relative block w-full rounded-t-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+                className="relative block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
                 placeholder="Email address"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -93,20 +96,17 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
+              <PasswordInput
                 id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="relative block w-full rounded-b-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-                placeholder="Password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
+                placeholder="Password"
+                required
                 disabled={isLoading}
+                autoComplete="current-password"
+                showLabel={false}
+                className="relative block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+                label="Password"
               />
             </div>
           </div>

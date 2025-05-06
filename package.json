@@ -7,8 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "postinstall": "prisma generate"
+    "type-check": "tsc --noEmit",
+    "postinstall": "prisma generate",
+    "prisma:seed": "npx prisma db seed",
+    "check": "npm run lint && npm run type-check",
+    "test:sendgrid": "tsx lib/test-sendgrid.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -22,6 +25,7 @@
     "next-auth": "^4.24.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-icons": "^5.5.0",
     "zod": "^3.24.4"
   },
   "devDependencies": {

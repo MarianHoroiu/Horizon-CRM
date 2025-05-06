@@ -112,6 +112,13 @@ export default function Navigation() {
                 <span className="text-white mr-4 hidden sm:block">
                   {session?.user?.name || session?.user?.email}
                 </span>
+                <Link
+                  href="/dashboard/account"
+                  className={`${isActive(
+                    "/dashboard/account"
+                  )} text-white rounded-md px-3 py-2 text-sm font-medium mr-2`}>
+                  Account Settings
+                </Link>
                 <button
                   onClick={handleSignOut}
                   className="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500">
@@ -157,6 +164,13 @@ export default function Navigation() {
                   "/dashboard/tasks"
                 )} text-white block rounded-md px-3 py-2 text-base font-medium`}>
                 Tasks
+              </Link>
+              <Link
+                href="/dashboard/account"
+                className={`${isActive(
+                  "/dashboard/account"
+                )} text-white block rounded-md px-3 py-2 text-base font-medium`}>
+                Account Settings
               </Link>
             </>
           )}
