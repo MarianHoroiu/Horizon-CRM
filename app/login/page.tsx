@@ -8,7 +8,7 @@ import PasswordInput from "@/app/components/form/PasswordInput";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const error = searchParams.get("error");

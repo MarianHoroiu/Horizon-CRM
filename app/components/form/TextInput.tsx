@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, forwardRef } from "react";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import React, { forwardRef } from "react";
 import { UseFormRegisterReturn } from "react-hook-form";
 import { cn } from "@/lib/utils/cn";
 
-interface PasswordInputProps {
+interface TextInputProps {
   id: string;
+  name?: string;
+  type?: string;
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   label?: string;
@@ -22,10 +23,12 @@ interface PasswordInputProps {
   touched?: boolean;
 }
 
-const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
+const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
   (
     {
       id,
+      name,
+      type = "text",
       value,
       onChange,
       label,
@@ -34,7 +37,7 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
       disabled = false,
       error,
       className = "",
-      autoComplete = "current-password",
+      autoComplete,
       showLabel = true,
       registerProps,
       isValid = false,
@@ -42,12 +45,6 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     },
     ref
   ) => {
-    const [showPassword, setShowPassword] = useState(false);
-
-    const togglePasswordVisibility = () => {
-      setShowPassword(!showPassword);
-    };
-
     return (
       <div className="w-full">
         {label && showLabel && (
@@ -67,14 +64,15 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
         <div className="relative">
           <input
             id={id}
-            type={showPassword ? "text" : "password"}
+            name={name}
+            type={type}
             value={value}
             onChange={onChange}
             required={required}
             disabled={disabled}
             placeholder={placeholder}
             className={cn(
-              "w-full px-3 py-2 h-10 border rounded-md shadow-sm focus:outline-none pr-10 appearance-none",
+              "w-full px-3 py-2 h-10 border rounded-md shadow-sm focus:outline-none appearance-none",
               "[&:-webkit-autofill]:bg-white [&:-webkit-autofill:focus]:bg-white [&:-webkit-autofill:active]:bg-white",
               className,
               {
@@ -91,20 +89,6 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             {...registerProps}
             aria-invalid={!isValid ? "true" : "false"}
           />
-          <div className="absolute inset-y-0 right-0 flex items-center">
-            <button
-              type="button"
-              className="pr-3 flex items-center"
-              onClick={togglePasswordVisibility}
-              tabIndex={-1}
-              aria-label={showPassword ? "Hide password" : "Show password"}>
-              {showPassword ? (
-                <FaEyeSlash className="h-5 w-5 text-gray-400" />
-              ) : (
-                <FaEye className="h-5 w-5 text-gray-400" />
-              )}
-            </button>
-          </div>
         </div>
 
         {error && (
@@ -117,6 +101,6 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
   }
 );
 
-PasswordInput.displayName = "PasswordInput";
+TextInput.displayName = "TextInput";
 
-export default PasswordInput;
+export default TextInput;

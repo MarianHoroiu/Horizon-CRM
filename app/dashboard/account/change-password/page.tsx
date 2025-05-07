@@ -3,7 +3,51 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import PasswordInput from "@/app/components/form/PasswordInput";
+import {
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+} from "@heroicons/react/24/outline";
+
+// Define validation schema using Zod
+const passwordSchema = z
+  .object({
+    currentPassword: z
+      .string()
+      .min(1, { message: "Current password is required" }),
+    newPassword: z
+      .string()
+      .min(8, { message: "Password must be at least 8 characters long" })
+      .refine(val => /[A-Z]/.test(val), {
+        message: "Password must contain at least one uppercase letter",
+      })
+      .refine(val => /[a-z]/.test(val), {
+        message: "Password must contain at least one lowercase letter",
+      })
+      .refine(val => /[0-9]/.test(val), {
+        message: "Password must contain at least one number",
+      })
+      .refine(val => /[^A-Za-z0-9]/.test(val), {
+        message: "Password must contain at least one special character",
+      }),
+    confirmPassword: z
+      .string()
+      .min(1, { message: "Please confirm your password" }),
+  })
+  .refine(data => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  })
+  .refine(data => data.currentPassword !== data.newPassword, {
+    message: "New password must be different from the current password",
+    path: ["newPassword"],
+  });
+
+// Define the type for our form
+type PasswordFormData = z.infer<typeof passwordSchema>;
 
 export default function ChangePasswordPage() {
   const { status } = useSession({
@@ -13,42 +57,31 @@ export default function ChangePasswordPage() {
     },
   });
 
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, dirtyFields, touchedFields, isSubmitting, isValid },
+    setError,
+  } = useForm<PasswordFormData>({
+    resolver: zodResolver(passwordSchema),
+    mode: "onBlur",
+    reValidateMode: "onChange",
+    criteriaMode: "all",
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
 
+  const onSubmit: SubmitHandler<PasswordFormData> = async data => {
     // Reset messages
     setSuccessMessage("");
-    setErrorMessage("");
-    setPasswordError("");
-
-    // Validate passwords
-    if (newPassword !== confirmPassword) {
-      setPasswordError("New passwords do not match");
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      setPasswordError("Password must be at least 8 characters long");
-      return;
-    }
-
-    // Check if the new password is the same as current password
-    if (currentPassword === newPassword) {
-      setPasswordError(
-        "New password must be different from the current password"
-      );
-      return;
-    }
-
-    setIsLoading(true);
+    setServerError(null);
 
     try {
       const response = await fetch("/api/user/reset-password", {
@@ -57,31 +90,38 @@ export default function ChangePasswordPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          currentPassword,
-          newPassword,
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
         }),
       });
 
-      const data = await response.json();
+      const responseData = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to reset password");
+        throw new Error(responseData.error || "Failed to reset password");
       }
 
       // Clear form fields
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
+      reset();
 
       // Show success message
       setSuccessMessage("Password updated successfully");
     } catch (error) {
       console.error("Error resetting password:", error);
-      setErrorMessage(
+      setServerError(
         error instanceof Error ? error.message : "An unknown error occurred"
       );
-    } finally {
-      setIsLoading(false);
+
+      // Check for specific error messages from the API
+      if (
+        error instanceof Error &&
+        error.message.includes("current password")
+      ) {
+        setError("currentPassword", {
+          type: "manual",
+          message: "Current password is incorrect",
+        });
+      }
     }
   };
 
@@ -94,63 +134,88 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-8 max-w-xl">
       <h1 className="text-2xl font-bold mb-6">Change Password</h1>
 
       <div className="bg-white rounded-lg shadow-md p-6">
         {successMessage && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          <div className="p-3 bg-green-100 text-green-700 rounded-md text-sm mb-4 flex items-center">
+            <CheckCircleIcon className="h-5 w-5 mr-2 text-green-500" />
             {successMessage}
           </div>
         )}
 
-        {errorMessage && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {errorMessage}
+        {serverError && (
+          <div className="p-3 bg-red-100 text-red-700 rounded-md text-sm mb-4 flex items-center">
+            <ExclamationCircleIcon className="h-5 w-5 mr-2 text-red-500" />
+            {serverError}
           </div>
         )}
 
-        <form onSubmit={handlePasswordChange}>
-          <div className="mb-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-6"
+          noValidate>
+          {/* Current Password Field */}
+          <div>
             <PasswordInput
               id="currentPassword"
-              value={currentPassword}
-              onChange={e => setCurrentPassword(e.target.value)}
+              registerProps={register("currentPassword")}
               label="Current Password"
               required
               autoComplete="current-password"
+              error={errors.currentPassword?.message}
+              isValid={
+                !!touchedFields.currentPassword && !errors.currentPassword
+              }
+              touched={!!touchedFields.currentPassword}
             />
           </div>
 
-          <div className="mb-4">
+          {/* New Password Field */}
+          <div>
             <PasswordInput
               id="newPassword"
-              value={newPassword}
-              onChange={e => setNewPassword(e.target.value)}
+              registerProps={register("newPassword")}
               label="New Password"
               required
               autoComplete="new-password"
+              error={errors.newPassword?.message}
+              isValid={!!touchedFields.newPassword && !errors.newPassword}
+              touched={!!touchedFields.newPassword}
             />
           </div>
 
-          <div className="mb-4">
+          {/* Confirm Password Field */}
+          <div>
             <PasswordInput
               id="confirmPassword"
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
+              registerProps={register("confirmPassword")}
               label="Confirm New Password"
               required
               autoComplete="new-password"
-              error={passwordError}
+              isValid={dirtyFields.confirmPassword && !errors.confirmPassword}
+              error={errors.confirmPassword?.message}
+              touched={!!touchedFields.confirmPassword}
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50">
-            {isLoading ? "Updating..." : "Update Password"}
-          </button>
+          {/* Submit Button */}
+          <div className="flex justify-end pt-4">
+            <button
+              type="submit"
+              className={`inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2
+                ${
+                  isValid
+                    ? "bg-green-600 hover:bg-green-700 focus:ring-green-500"
+                    : "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500"
+                }
+                ${isSubmitting ? "opacity-70 cursor-not-allowed" : ""}
+              `}
+              disabled={isSubmitting}>
+              {isSubmitting ? "Updating..." : "Update Password"}
+            </button>
+          </div>
         </form>
       </div>
     </div>
