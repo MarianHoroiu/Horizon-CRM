@@ -3,7 +3,6 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import * as bcrypt from "bcryptjs";
-import { Role } from "@/lib/validations/schemas";
 import type { NextAuthOptions } from "next-auth";
 
 // Extend the built-in types for NextAuth

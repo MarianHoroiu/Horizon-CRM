@@ -3,11 +3,9 @@
 import React from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 
 export default function Home() {
   const { data: session, status } = useSession();
-  const router = useRouter();
 
   // If the user is authenticated, redirect to dashboard or show authenticated homepage
   const isAuthenticated = status === "authenticated";

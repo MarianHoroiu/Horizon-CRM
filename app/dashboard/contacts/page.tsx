@@ -8,7 +8,6 @@ import React, {
   useRef,
 } from "react";
 import { createPortal } from "react-dom";
-import { useSession } from "next-auth/react";
 import { searchContacts, getContacts } from "@/lib/services/contactService";
 import debounce from "lodash/debounce";
 import AddContactModal from "@/app/components/form/AddContactModal";
@@ -24,7 +23,6 @@ type Contact = {
 };
 
 export default function ContactsPage() {
-  const { data: session } = useSession();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -137,27 +135,35 @@ export default function ContactsPage() {
   }, [allContacts, searchQuery, statusFilter, companyFilter]);
 
   // Handle search with debouncing to prevent excessive API calls
-  const debouncedSearch = useCallback(
-    debounce(async (query: string) => {
-      if (!query.trim()) {
-        fetchContacts();
-        return;
-      }
+  const debouncedFetchHandler = useMemo(
+    () =>
+      debounce(async (query: string) => {
+        if (!query.trim()) {
+          fetchContacts();
+          return;
+        }
 
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await searchContacts(query);
-        setContacts(data.contacts);
-        setAllContacts(data.contacts);
-      } catch (err) {
-        setError("Search failed");
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 500),
+        setIsLoading(true);
+        setError(null);
+        try {
+          const data = await searchContacts(query);
+          setContacts(data.contacts);
+          setAllContacts(data.contacts);
+        } catch (err) {
+          setError("Search failed");
+          console.error(err);
+        } finally {
+          setIsLoading(false);
+        }
+      }, 500),
     []
+  );
+
+  const debouncedSearch = useCallback(
+    (query: string) => {
+      debouncedFetchHandler(query);
+    },
+    [debouncedFetchHandler]
   );
 
   // Effect to load contacts on component mount
@@ -165,16 +171,16 @@ export default function ContactsPage() {
     fetchContacts();
     // Cleanup function for the debounced search
     return () => {
-      debouncedSearch.cancel();
+      debouncedFetchHandler.cancel();
     };
-  }, [debouncedSearch]);
+  }, [debouncedFetchHandler]);
 
   // Effect to apply filters when filter state changes
   useEffect(() => {
     if (allContacts.length > 0) {
       filterContacts();
     }
-  }, [filterContacts, statusFilter, companyFilter]);
+  }, [filterContacts, statusFilter, companyFilter, allContacts.length]);
 
   // Handle search input changes
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { useSession } from "next-auth/react";
 
 // Dummy data for report visualizations
 const monthlyData = [
@@ -14,7 +13,6 @@ const monthlyData = [
 ];
 
 export default function ReportsPage() {
-  const { data: session } = useSession();
 
   return (
     <div className="p-8">

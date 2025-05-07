@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Get the authenticated user session
     const session = await getServerSession();

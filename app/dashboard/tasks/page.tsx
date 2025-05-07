@@ -1,11 +1,8 @@
 "use client";
 
 import React from "react";
-import { useSession } from "next-auth/react";
 
 export default function TasksPage() {
-  const { data: session } = useSession();
-
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold mb-6">Tasks</h1>

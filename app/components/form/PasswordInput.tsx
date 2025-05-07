@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils/cn";
 interface PasswordInputProps {
   id: string;
   value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (_e: React.ChangeEvent<HTMLInputElement>) => void;
   label?: string;
   placeholder?: string;
   required?: boolean;
