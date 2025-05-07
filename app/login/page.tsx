@@ -4,7 +4,20 @@ import React, { useState, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import TextInput from "@/app/components/form/TextInput";
 import PasswordInput from "@/app/components/form/PasswordInput";
+
+// Define the validation schema using Zod
+const loginSchema = z.object({
+  email: z.string().min(1, { message: "Email is required" }),
+  password: z.string().min(1, { message: "Password is required" }),
+});
+
+// Define the type for our form
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,10 +26,19 @@ export default function LoginPage() {
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const error = searchParams.get("error");
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
+
+  // Form handling with react-hook-form
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, touchedFields, dirtyFields },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    mode: "onBlur", // Validate on field blur
+    reValidateMode: "onChange", // Re-validate when field changes after it's been touched
+  });
 
   // If already authenticated, redirect
   useEffect(() => {
@@ -25,8 +47,7 @@ export default function LoginPage() {
     }
   }, [status, router, callbackUrl]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit: SubmitHandler<LoginFormData> = async data => {
     setIsLoading(true);
     setLoginError("");
 
@@ -35,8 +56,8 @@ export default function LoginPage() {
       await signIn("credentials", {
         redirect: true,
         callbackUrl: callbackUrl,
-        email,
-        password,
+        email: data.email,
+        password: data.password,
       });
 
       // We won't reach here as redirect is true
@@ -49,7 +70,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
-      <div className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-md space-y-8 bg-white rounded-lg shadow-md p-6 pb-10">
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
             Sign in to your account
@@ -76,39 +97,47 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm space-y-4">
-            <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="relative block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-                placeholder="Email address"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-            <div>
-              <PasswordInput
-                id="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Password"
-                required
-                disabled={isLoading}
-                autoComplete="current-password"
-                showLabel={false}
-                className="relative block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-                label="Password"
-              />
-            </div>
+        <form
+          className="space-y-6"
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate>
+          <div>
+            {/* Email Input */}
+            <TextInput
+              id="email"
+              type="email"
+              label="Email address"
+              required
+              isValid={dirtyFields.email && !errors.email}
+              error={errors.email?.message}
+              touched={touchedFields.email}
+              placeholder="Email address"
+              autoComplete="email"
+              disabled={isLoading}
+              showLabel={false}
+              registerProps={register("email", {
+                required: "Email is required",
+              })}
+            />
+          </div>
+
+          <div>
+            {/* Password Input */}
+            <PasswordInput
+              id="password"
+              label="Password"
+              required
+              isValid={dirtyFields.password && !errors.password}
+              error={errors.password?.message}
+              touched={touchedFields.password}
+              placeholder="Password"
+              autoComplete="current-password"
+              disabled={isLoading}
+              showLabel={false}
+              registerProps={register("password", {
+                required: "Password is required",
+              })}
+            />
           </div>
 
           <div>
