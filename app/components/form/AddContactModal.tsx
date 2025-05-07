@@ -58,14 +58,14 @@ export default function AddContactModal({
       aria-modal="true">
       <div
         ref={modalRef}
-        className="bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-lg sm:w-full sm:p-6">
-        <div className="mb-4">
+        className="bg-white rounded-lg p-6 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-lg sm:w-full max-h-[90vh] overflow-y-auto">
+        <div className="mb-6">
           <h3
-            className="text-lg leading-6 font-medium text-gray-900"
+            className="text-xl leading-6 font-semibold text-gray-900"
             id="modal-title">
             Add New Contact
           </h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-gray-500">
             Fill in the information to create a new contact
           </p>
         </div>
