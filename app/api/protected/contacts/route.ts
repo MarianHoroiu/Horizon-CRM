@@ -43,14 +43,10 @@ export async function GET() {
 const contactSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required" }).max(100),
   lastName: z.string().min(1, { message: "Last name is required" }).max(100),
-  email: z
-    .string()
-    .email({ message: "Invalid email address" })
-    .optional()
-    .nullable(),
-  phone: z.string().max(20).optional().nullable(),
-  company: z.string().max(100).optional().nullable(),
-  status: z.string().default("LEAD"),
+  email: z.string().email({ message: "Invalid email address" }),
+  phone: z.string().max(20),
+  company: z.string().max(100),
+  status: z.enum(["LEAD", "PROSPECT", "CUSTOMER", "INACTIVE"]).default("LEAD"),
 });
 
 export async function POST(request: NextRequest) {
@@ -71,6 +67,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Check if this is an update operation by looking for the ID parameter
+    const { searchParams } = new URL(request.url);
+    const contactId = searchParams.get("id");
+
     // Parse and validate request body
     const body = await request.json();
 
@@ -84,19 +84,58 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create contact with validated data
-    const contact = await prisma.contact.create({
-      data: {
-        ...result.data,
-        userId: user.id,
-      },
-    });
+    // If contactId is provided, this is an update operation
+    if (contactId) {
+      // Check if the contact exists and belongs to the user
+      const existingContact = await prisma.contact.findFirst({
+        where: {
+          id: contactId,
+          userId: user.id,
+        },
+      });
 
-    return NextResponse.json({ contact }, { status: 201 });
+      if (!existingContact) {
+        return NextResponse.json(
+          { error: "Contact not found" },
+          { status: 404 }
+        );
+      }
+
+      // Update contact with validated data
+      const updatedContact = await prisma.contact.update({
+        where: { id: contactId },
+        data: {
+          firstName: result.data.firstName,
+          lastName: result.data.lastName,
+          email: result.data.email,
+          phone: result.data.phone,
+          company: result.data.company,
+          status: result.data.status,
+        },
+      });
+
+      return NextResponse.json({ contact: updatedContact });
+    } else {
+      // This is a create operation
+      // Create contact with validated data
+      const contact = await prisma.contact.create({
+        data: {
+          userId: user.id,
+          firstName: result.data.firstName,
+          lastName: result.data.lastName,
+          email: result.data.email,
+          phone: result.data.phone,
+          company: result.data.company,
+          status: result.data.status,
+        },
+      });
+
+      return NextResponse.json({ contact }, { status: 201 });
+    }
   } catch (error) {
-    console.error("Error creating contact:", error);
+    console.error("Error managing contact:", error);
     return NextResponse.json(
-      { error: "Failed to create contact" },
+      { error: "Failed to manage contact" },
       { status: 500 }
     );
   }

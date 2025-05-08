@@ -15,8 +15,12 @@ import {
 } from "@/lib/services/contactService";
 import debounce from "lodash/debounce";
 import AddContactModal from "@/app/components/form/AddContactModal";
+import EditContactModal from "@/app/components/form/EditContactModal";
 import DeleteConfirmationModal from "@/app/components/form/DeleteConfirmationModal";
 import { useToast } from "@/app/components/ui/Toast";
+import { cn } from "@/lib/utils/cn";
+
+type StatusType = "LEAD" | "PROSPECT" | "CUSTOMER" | "INACTIVE";
 
 type Contact = {
   id: string;
@@ -25,7 +29,7 @@ type Contact = {
   email: string | null;
   phone: string | null;
   company: string | null;
-  status: string;
+  status: StatusType;
 };
 
 export default function ContactsPage() {
@@ -36,6 +40,10 @@ export default function ContactsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showAddContactModal, setShowAddContactModal] = useState(false);
 
+  // Edit contact state
+  const [showEditContactModal, setShowEditContactModal] = useState(false);
+  const [contactToEdit, setContactToEdit] = useState<Contact | null>(null);
+
   // Filter state
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [companyFilter, setCompanyFilter] = useState<string | null>(null);
@@ -43,8 +51,8 @@ export default function ContactsPage() {
   const [showCompanyFilter, setShowCompanyFilter] = useState(false);
 
   // Refs for dropdown positioning
-  const companyFilterRef = useRef<HTMLTableCellElement>(null);
-  const statusFilterRef = useRef<HTMLTableCellElement>(null);
+  const companyHeaderRef = useRef<HTMLTableCellElement>(null);
+  const statusHeaderRef = useRef<HTMLTableCellElement>(null);
   const [companyDropdownPosition, setCompanyDropdownPosition] = useState({
     top: 0,
     left: 0,
@@ -77,8 +85,8 @@ export default function ContactsPage() {
 
   // Update position of dropdowns when they are shown
   useEffect(() => {
-    if (showCompanyFilter && companyFilterRef.current) {
-      const rect = companyFilterRef.current.getBoundingClientRect();
+    if (showCompanyFilter && companyHeaderRef.current) {
+      const rect = companyHeaderRef.current.getBoundingClientRect();
       setCompanyDropdownPosition({
         top: rect.bottom + window.scrollY,
         left: rect.right - 192 + window.scrollX, // 192px is w-48
@@ -87,8 +95,8 @@ export default function ContactsPage() {
   }, [showCompanyFilter]);
 
   useEffect(() => {
-    if (showStatusFilter && statusFilterRef.current) {
-      const rect = statusFilterRef.current.getBoundingClientRect();
+    if (showStatusFilter && statusHeaderRef.current) {
+      const rect = statusHeaderRef.current.getBoundingClientRect();
       setStatusDropdownPosition({
         top: rect.bottom + window.scrollY,
         left: rect.right - 192 + window.scrollX, // 192px is w-48
@@ -370,6 +378,40 @@ export default function ContactsPage() {
     }
   };
 
+  // Handle edit click
+  const handleEditClick = (contact: Contact) => {
+    setContactToEdit(contact);
+    setShowEditContactModal(true);
+  };
+
+  // Handle edit cancel
+  const handleEditCancel = () => {
+    setShowEditContactModal(false);
+    setContactToEdit(null);
+  };
+
+  // Handle edit success
+  const handleEditSuccess = () => {
+    setShowEditContactModal(false);
+    setContactToEdit(null);
+
+    // Refresh the contacts list
+    console.log("Refreshing contacts list after edit");
+
+    // Clear filters to ensure we see the updated contact
+    setStatusFilter(null);
+    setCompanyFilter(null);
+    setSearchQuery("");
+
+    // Fetch fresh data
+    fetchContacts().then(() => {
+      showToast({
+        message: "Contact updated successfully!",
+        type: "success",
+      });
+    });
+  };
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
       {/* Page header */}
@@ -434,15 +476,25 @@ export default function ContactsPage() {
         />
       )}
 
+      {/* Edit Contact Modal */}
+      {showEditContactModal && contactToEdit && (
+        <EditContactModal
+          isOpen={showEditContactModal}
+          onClose={handleEditCancel}
+          onSuccess={handleEditSuccess}
+          contact={contactToEdit}
+        />
+      )}
+
       {/* Delete Confirmation Modal */}
-      {isMounted && showDeleteModal && contactToDelete && (
+      {showDeleteModal && contactToDelete && (
         <DeleteConfirmationModal
           isOpen={showDeleteModal}
           onClose={handleDeleteCancel}
           onConfirm={handleDeleteConfirm}
-          title="Delete Contact"
-          message={`Are you sure you want to delete ${contactToDelete.firstName} ${contactToDelete.lastName}? This will also delete all tasks associated with this contact.`}
           isDeleting={isDeleting}
+          title="Delete Contact"
+          message={`Are you sure you want to delete ${contactToDelete.firstName} ${contactToDelete.lastName}? This action cannot be undone.`}
         />
       )}
 
@@ -518,18 +570,13 @@ export default function ContactsPage() {
                     <th
                       scope="col"
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Phone
                     </th>
                     <th
                       scope="col"
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
                       data-filter="company"
-                      ref={companyFilterRef}>
+                      ref={companyHeaderRef}>
                       <div className="flex items-center gap-1">
                         <span className={companyFilter ? "text-blue-600" : ""}>
                           Company
@@ -567,7 +614,7 @@ export default function ContactsPage() {
                       scope="col"
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
                       data-filter="status"
-                      ref={statusFilterRef}>
+                      ref={statusHeaderRef}>
                       <div className="flex items-center gap-1">
                         <span className={statusFilter ? "text-blue-600" : ""}>
                           Status
@@ -609,60 +656,100 @@ export default function ContactsPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {isLoading ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center">
+                      <td colSpan={5} className="px-6 py-4 text-center">
                         Loading...
                       </td>
                     </tr>
                   ) : contacts.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center">
+                      <td colSpan={5} className="px-6 py-4 text-center">
                         No contacts found
                       </td>
                     </tr>
                   ) : (
                     contacts.map(contact => (
-                      <tr key={contact.id} className="hover:bg-gray-50">
+                      <tr
+                        key={contact.id}
+                        className="hover:bg-gray-50 border-b border-gray-100">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {contact.firstName} {contact.lastName}
+                          <div className="flex items-center">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {contact.firstName} {contact.lastName}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {contact.email}
+                              </div>
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">
-                            {contact.email}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-gray-900">
                             {contact.phone}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">
+                          <div
+                            className={cn(
+                              "text-sm font-medium",
+                              companyFilter === contact.company
+                                ? "text-indigo-600"
+                                : "text-gray-900"
+                            )}>
                             {contact.company}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                               contact.status === "LEAD"
                                 ? "bg-blue-100 text-blue-800"
                                 : contact.status === "PROSPECT"
                                 ? "bg-green-100 text-green-800"
+                                : contact.status === "CUSTOMER"
+                                ? "bg-green-100 text-green-800"
                                 : "bg-yellow-100 text-yellow-800"
                             }`}>
                             {contact.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button className="text-blue-600 hover:text-blue-900 mr-3">
-                            Edit
-                          </button>
-                          <button
-                            className="text-red-600 hover:text-red-900"
-                            onClick={() => handleDeleteClick(contact)}>
-                            Delete
-                          </button>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">
+                          <div className="flex justify-center items-center space-x-2">
+                            <button
+                              onClick={() => handleEditClick(contact)}
+                              className="text-indigo-600 hover:text-indigo-900 mr-2">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClick(contact)}
+                              className="text-red-600 hover:text-red-900">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))

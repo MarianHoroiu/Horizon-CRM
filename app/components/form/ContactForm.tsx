@@ -1,15 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { createContact } from "@/lib/services/contactService";
+import { createContact, updateContact } from "@/lib/services/contactService";
 import DOMPurify from "dompurify";
 import TextInput from "./TextInput";
 import SelectInput from "./SelectInput";
 import { cn } from "@/lib/utils/cn";
 import { useToast } from "@/app/components/ui/Toast";
+
+type StatusType = "LEAD" | "PROSPECT" | "CUSTOMER" | "INACTIVE";
 
 // Define the validation schema using Zod
 const contactSchema = z.object({
@@ -48,9 +50,21 @@ const contactSchema = z.object({
 // Define the type for our form
 type ContactFormData = z.infer<typeof contactSchema>;
 
+interface Contact {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  status: StatusType;
+}
+
 interface ContactFormProps {
   onSuccess: () => void;
   onCancel: () => void;
+  initialData?: Contact;
+  isEditing?: boolean;
 }
 
 const STATUS_OPTIONS = [
@@ -60,7 +74,12 @@ const STATUS_OPTIONS = [
   { value: "INACTIVE", label: "Inactive" },
 ];
 
-export default function ContactForm({ onSuccess, onCancel }: ContactFormProps) {
+export default function ContactForm({
+  onSuccess,
+  onCancel,
+  initialData,
+  isEditing = false,
+}: ContactFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const { showToast } = useToast();
@@ -69,22 +88,22 @@ export default function ContactForm({ onSuccess, onCancel }: ContactFormProps) {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isValid, touchedFields },
+    formState: { errors, touchedFields },
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
     mode: "onBlur", // Validate on field blur
     reValidateMode: "onChange", // Re-validate when field changes after it's been touched
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      company: "",
-      status: "LEAD",
+      firstName: initialData?.firstName || "",
+      lastName: initialData?.lastName || "",
+      email: initialData?.email || "",
+      phone: initialData?.phone || "",
+      company: initialData?.company || "",
+      status: (initialData?.status as StatusType) || "LEAD",
     },
   });
 
-  const onSubmit: SubmitHandler<ContactFormData> = async data => {
+  const handleFormSubmit = handleSubmit(async (data: ContactFormData) => {
     setIsSubmitting(true);
     setServerError(null);
 
@@ -99,23 +118,62 @@ export default function ContactForm({ onSuccess, onCancel }: ContactFormProps) {
         company: DOMPurify.sanitize(data.company),
       };
 
-      // Submit sanitized data
-      await createContact(sanitizedData);
-      reset();
+      let success = false;
 
-      // Show success toast notification
-      showToast({
-        message: `Contact ${sanitizedData.firstName} ${sanitizedData.lastName} created successfully!`,
-        type: "success",
-      });
+      if (isEditing && initialData) {
+        // Update existing contact
+        try {
+          console.log(
+            `Attempting to update contact: ${initialData.id}`,
+            sanitizedData
+          );
+          await updateContact(initialData.id, sanitizedData);
+          console.log(`Contact update completed successfully`);
+          success = true;
+        } catch (error) {
+          console.error("Error updating contact:", error);
+          // Re-throw to be caught by the outer catch block
+          throw error;
+        }
+      } else {
+        // Create new contact
+        try {
+          console.log("Attempting to create new contact:", sanitizedData);
+          await createContact(sanitizedData);
+          console.log("Contact creation completed successfully");
+          success = true;
+        } catch (error) {
+          console.error("Error creating contact:", error);
+          // Re-throw to be caught by the outer catch block
+          throw error;
+        }
+      }
 
-      onSuccess();
+      if (success) {
+        // Show success toast notification
+        showToast({
+          message: `Contact ${sanitizedData.firstName} ${
+            sanitizedData.lastName
+          } ${isEditing ? "updated" : "created"} successfully!`,
+          type: "success",
+        });
+
+        reset();
+        onSuccess();
+      }
     } catch (error) {
-      console.error("Error creating contact:", error);
+      console.error(
+        `Error ${isEditing ? "updating" : "creating"} contact:`,
+        error
+      );
+
+      // Handle error message
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "Failed to create contact. Please try again.";
+          : `Failed to ${
+              isEditing ? "update" : "create"
+            } contact. Please try again.`;
 
       setServerError(errorMessage);
 
@@ -128,10 +186,10 @@ export default function ContactForm({ onSuccess, onCancel }: ContactFormProps) {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  });
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+    <form onSubmit={handleFormSubmit} className="space-y-4" noValidate>
       {serverError && (
         <div className="p-3 bg-red-100 text-red-700 rounded-md text-sm">
           {serverError}
@@ -248,16 +306,36 @@ export default function ContactForm({ onSuccess, onCancel }: ContactFormProps) {
         <button
           type="submit"
           className={cn(
-            "inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2",
-            {
-              "bg-green-600 hover:bg-green-700 focus:ring-green-500": isValid,
-              "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500":
-                !isValid,
-              "opacity-70 cursor-not-allowed": isSubmitting,
-            }
+            "inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2",
+            isSubmitting
+              ? "bg-indigo-400 cursor-not-allowed"
+              : "bg-indigo-600 hover:bg-indigo-700"
           )}
           disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : "Save Contact"}
+          {isSubmitting ? (
+            <>
+              <svg
+                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24">
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {isEditing ? "Updating..." : "Saving..."}
+            </>
+          ) : (
+            <>{isEditing ? "Update Contact" : "Create Contact"}</>
+          )}
         </button>
       </div>
     </form>
