@@ -16,6 +16,7 @@ import {
 import debounce from "lodash/debounce";
 import AddContactModal from "@/app/components/form/AddContactModal";
 import DeleteConfirmationModal from "@/app/components/form/DeleteConfirmationModal";
+import { useToast } from "@/app/components/ui/Toast";
 
 type Contact = {
   id: string;
@@ -58,6 +59,8 @@ export default function ContactsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const { showToast } = useToast();
 
   // Extract unique values for filters
   const uniqueStatuses = useMemo(() => {
@@ -345,9 +348,23 @@ export default function ContactsPage() {
       // Close the modal
       setShowDeleteModal(false);
       setContactToDelete(null);
+
+      // Show success toast
+      showToast({
+        message: `Your contact ${contactToDelete.firstName} ${contactToDelete.lastName} has been deleted successfully`,
+        type: "success",
+        duration: 4000,
+      });
     } catch (err) {
       setError("Failed to delete contact");
       console.error(err);
+
+      // Show error toast
+      showToast({
+        message: `Failed to delete contact: ${contactToDelete.firstName} ${contactToDelete.lastName}`,
+        type: "error",
+        duration: 4000,
+      });
     } finally {
       setIsDeleting(false);
     }

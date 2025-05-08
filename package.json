@@ -29,6 +29,7 @@
     "dompurify": "^3.2.5",
     "flowbite": "^3.1.2",
     "flowbite-react": "^0.11.7",
+    "framer-motion": "^12.10.4",
     "lodash": "^4.17.21",
     "next": "15.3.1",
     "next-auth": "^4.24.11",
