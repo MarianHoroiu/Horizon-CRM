@@ -1,12 +1,100 @@
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { Role, Status, TaskStatus } from "../lib/validations/schemas";
+import { faker } from "@faker-js/faker";
 
 const prisma = new PrismaClient();
+
+// Constants for seeding
+const ADMIN_CONTACTS = 20;
+const MANAGER_CONTACTS = 15;
+const SALES_CONTACTS = 25;
+const TASKS_PER_CONTACT_MIN = 1;
+const TASKS_PER_CONTACT_MAX = 4;
 
 // Function to hash passwords
 async function hashPassword(password: string): Promise<string> {
   return await bcrypt.hash(password, 10);
+}
+
+// Function to generate a random status
+function getRandomStatus(): Status {
+  const statuses = [
+    Status.LEAD,
+    Status.PROSPECT,
+    Status.CUSTOMER,
+    Status.INACTIVE,
+  ];
+  return statuses[Math.floor(Math.random() * statuses.length)];
+}
+
+// Function to generate a random task status
+function getRandomTaskStatus(): TaskStatus {
+  const statuses = [
+    TaskStatus.PENDING,
+    TaskStatus.IN_PROGRESS,
+    TaskStatus.COMPLETED,
+    TaskStatus.CANCELLED,
+  ];
+  return statuses[Math.floor(Math.random() * statuses.length)];
+}
+
+// Function to generate a random date within a range
+function getRandomDate(start: Date, end: Date): Date {
+  return new Date(
+    start.getTime() + Math.random() * (end.getTime() - start.getTime())
+  );
+}
+
+// Function to create random tasks for a contact
+async function createRandomTasks(userId: string, contactId: string) {
+  const numTasks =
+    Math.floor(
+      Math.random() * (TASKS_PER_CONTACT_MAX - TASKS_PER_CONTACT_MIN + 1)
+    ) + TASKS_PER_CONTACT_MIN;
+
+  const tasks = [];
+  for (let i = 0; i < numTasks; i++) {
+    const pastDate = new Date();
+    pastDate.setDate(pastDate.getDate() - 30); // 30 days ago
+
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 30); // 30 days in future
+
+    tasks.push({
+      title: faker.lorem.sentence({ min: 3, max: 5 }),
+      description: faker.lorem.paragraph(),
+      status: getRandomTaskStatus(),
+      dueDate: getRandomDate(pastDate, futureDate),
+      userId,
+      contactId,
+    });
+  }
+
+  return await prisma.task.createMany({
+    data: tasks,
+  });
+}
+
+// Function to create random contacts for a user
+async function createRandomContacts(userId: string, count: number) {
+  console.log(`Creating ${count} contacts for user ${userId}...`);
+
+  for (let i = 0; i < count; i++) {
+    const contact = await prisma.contact.create({
+      data: {
+        firstName: faker.person.firstName(),
+        lastName: faker.person.lastName(),
+        email: faker.internet.email().toLowerCase(),
+        phone: faker.phone.number(),
+        company: faker.company.name(),
+        status: getRandomStatus(),
+        userId,
+      },
+    });
+
+    await createRandomTasks(userId, contact.id);
+  }
 }
 
 async function main() {
@@ -22,7 +110,7 @@ async function main() {
   const defaultPassword = await hashPassword("Password123!");
 
   // Create admin user
-  await prisma.user.create({
+  const admin = await prisma.user.create({
     data: {
       firstName: "Admin",
       lastName: "User",
@@ -44,7 +132,7 @@ async function main() {
   });
 
   // Create regular user
-  const user = await prisma.user.create({
+  const salesRep = await prisma.user.create({
     data: {
       firstName: "Sales",
       lastName: "Representative",
@@ -54,101 +142,18 @@ async function main() {
     },
   });
 
-  // Create contacts
-  const lead = await prisma.contact.create({
-    data: {
-      firstName: "John",
-      lastName: "Smith",
-      email: "john@example.com",
-      phone: "555-123-4567",
-      company: "ABC Corp",
-      status: Status.LEAD,
-      userId: user.id,
-    },
-  });
-
-  const prospect = await prisma.contact.create({
-    data: {
-      firstName: "Sarah",
-      lastName: "Johnson",
-      email: "sarah@example.com",
-      phone: "555-987-6543",
-      company: "XYZ Industries",
-      status: Status.PROSPECT,
-      userId: manager.id,
-    },
-  });
-
-  const customer = await prisma.contact.create({
-    data: {
-      firstName: "Michael",
-      lastName: "Brown",
-      email: "michael@example.com",
-      phone: "555-456-7890",
-      company: "Acme Inc",
-      status: Status.CUSTOMER,
-      userId: user.id,
-    },
-  });
-
-  const inactive = await prisma.contact.create({
-    data: {
-      firstName: "Emily",
-      lastName: "Davis",
-      email: "emily@example.com",
-      phone: "555-789-0123",
-      company: "Old Client LLC",
-      status: Status.INACTIVE,
-      userId: manager.id,
-    },
-  });
-
-  // Create tasks
-  await prisma.task.create({
-    data: {
-      title: "Initial outreach call",
-      description: "Introduce our services and schedule a demo",
-      status: TaskStatus.PENDING,
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-      userId: user.id,
-      contactId: lead.id,
-    },
-  });
-
-  await prisma.task.create({
-    data: {
-      title: "Prepare proposal",
-      description: "Create custom proposal based on client needs",
-      status: TaskStatus.IN_PROGRESS,
-      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-      userId: manager.id,
-      contactId: prospect.id,
-    },
-  });
-
-  await prisma.task.create({
-    data: {
-      title: "Onboarding session",
-      description: "Walk through product features and setup",
-      status: TaskStatus.COMPLETED,
-      dueDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-      userId: user.id,
-      contactId: customer.id,
-    },
-  });
-
-  await prisma.task.create({
-    data: {
-      title: "Follow-up meeting",
-      description: "Discuss renewal options",
-      status: TaskStatus.CANCELLED,
-      dueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-      userId: manager.id,
-      contactId: inactive.id,
-    },
-  });
+  // Create random contacts and tasks for each user
+  await createRandomContacts(admin.id, ADMIN_CONTACTS);
+  await createRandomContacts(manager.id, MANAGER_CONTACTS);
+  await createRandomContacts(salesRep.id, SALES_CONTACTS);
 
   console.log("Database seeding completed!");
+  console.log(`Created ${ADMIN_CONTACTS} contacts for Admin`);
+  console.log(`Created ${MANAGER_CONTACTS} contacts for Manager`);
+  console.log(`Created ${SALES_CONTACTS} contacts for Sales Representative`);
+  console.log(
+    `Total Contacts: ${ADMIN_CONTACTS + MANAGER_CONTACTS + SALES_CONTACTS}`
+  );
 }
 
 main()
