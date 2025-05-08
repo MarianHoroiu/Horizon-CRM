@@ -8,9 +8,14 @@ import React, {
   useRef,
 } from "react";
 import { createPortal } from "react-dom";
-import { searchContacts, getContacts } from "@/lib/services/contactService";
+import {
+  searchContacts,
+  getContacts,
+  deleteContact,
+} from "@/lib/services/contactService";
 import debounce from "lodash/debounce";
 import AddContactModal from "@/app/components/form/AddContactModal";
+import DeleteConfirmationModal from "@/app/components/form/DeleteConfirmationModal";
 
 type Contact = {
   id: string;
@@ -48,6 +53,11 @@ export default function ContactsPage() {
     left: 0,
   });
   const [isMounted, setIsMounted] = useState(false);
+
+  // Delete confirmation state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Extract unique values for filters
   const uniqueStatuses = useMemo(() => {
@@ -308,6 +318,41 @@ export default function ContactsPage() {
     );
   };
 
+  // Handle contact deletion
+  const handleDeleteClick = (contact: Contact) => {
+    setContactToDelete(contact);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setContactToDelete(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!contactToDelete) return;
+
+    setIsDeleting(true);
+    setError(null);
+
+    try {
+      await deleteContact(contactToDelete.id);
+
+      // Update the contacts list after successful deletion
+      setContacts(contacts.filter(c => c.id !== contactToDelete.id));
+      setAllContacts(allContacts.filter(c => c.id !== contactToDelete.id));
+
+      // Close the modal
+      setShowDeleteModal(false);
+      setContactToDelete(null);
+    } catch (err) {
+      setError("Failed to delete contact");
+      console.error(err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
       {/* Page header */}
@@ -369,6 +414,18 @@ export default function ContactsPage() {
           isOpen={showAddContactModal}
           onClose={() => setShowAddContactModal(false)}
           onSuccess={handleContactCreationSuccess}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isMounted && showDeleteModal && contactToDelete && (
+        <DeleteConfirmationModal
+          isOpen={showDeleteModal}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          title="Delete Contact"
+          message={`Are you sure you want to delete ${contactToDelete.firstName} ${contactToDelete.lastName}? This will also delete all tasks associated with this contact.`}
+          isDeleting={isDeleting}
         />
       )}
 
@@ -584,7 +641,9 @@ export default function ContactsPage() {
                           <button className="text-blue-600 hover:text-blue-900 mr-3">
                             Edit
                           </button>
-                          <button className="text-red-600 hover:text-red-900">
+                          <button
+                            className="text-red-600 hover:text-red-900"
+                            onClick={() => handleDeleteClick(contact)}>
                             Delete
                           </button>
                         </td>

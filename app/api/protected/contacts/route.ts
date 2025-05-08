@@ -101,3 +101,71 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    // Verify authentication
+    const session = await getServerSession();
+
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get the user from the database
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Get the contact ID from the URL
+    const { searchParams } = new URL(request.url);
+    const contactId = searchParams.get("id");
+
+    if (!contactId) {
+      return NextResponse.json(
+        { error: "Contact ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Check if the contact exists and belongs to the user
+    const existingContact = await prisma.contact.findFirst({
+      where: {
+        id: contactId,
+        userId: user.id,
+      },
+    });
+
+    if (!existingContact) {
+      return NextResponse.json({ error: "Contact not found" }, { status: 404 });
+    }
+
+    // Delete in a transaction to ensure all operations succeed or fail together
+    await prisma.$transaction(async tx => {
+      // First delete all associated tasks
+      await tx.task.deleteMany({
+        where: {
+          contactId: contactId,
+        },
+      });
+
+      // Then delete the contact
+      await tx.contact.delete({
+        where: {
+          id: contactId,
+        },
+      });
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting contact:", error);
+    return NextResponse.json(
+      { error: "Failed to delete contact" },
+      { status: 500 }
+    );
+  }
+}

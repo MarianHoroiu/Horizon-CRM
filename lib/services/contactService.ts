@@ -70,3 +70,20 @@ export const createContact = async (contactData: {
     throw error;
   }
 };
+
+// Delete a contact with proper error handling
+export const deleteContact = async (contactId: string) => {
+  try {
+    const response = await fetch(`/api/protected/contacts?id=${contactId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    return handleResponse(response);
+  } catch (error) {
+    console.error("Error deleting contact:", error);
+    throw error;
+  }
+};
