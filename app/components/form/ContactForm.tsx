@@ -123,12 +123,7 @@ export default function ContactForm({
       if (isEditing && initialData) {
         // Update existing contact
         try {
-          console.log(
-            `Attempting to update contact: ${initialData.id}`,
-            sanitizedData
-          );
           await updateContact(initialData.id, sanitizedData);
-          console.log(`Contact update completed successfully`);
           success = true;
         } catch (error) {
           console.error("Error updating contact:", error);
@@ -138,9 +133,7 @@ export default function ContactForm({
       } else {
         // Create new contact
         try {
-          console.log("Attempting to create new contact:", sanitizedData);
           await createContact(sanitizedData);
-          console.log("Contact creation completed successfully");
           success = true;
         } catch (error) {
           console.error("Error creating contact:", error);

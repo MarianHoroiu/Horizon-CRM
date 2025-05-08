@@ -396,8 +396,7 @@ export default function ContactsPage() {
     setShowEditContactModal(false);
     setContactToEdit(null);
 
-    // Refresh the contacts list
-    console.log("Refreshing contacts list after edit");
+
 
     // Clear filters to ensure we see the updated contact
     setStatusFilter(null);
