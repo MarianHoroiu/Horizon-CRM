@@ -396,8 +396,6 @@ export default function ContactsPage() {
     setShowEditContactModal(false);
     setContactToEdit(null);
 
-
-
     // Clear filters to ensure we see the updated contact
     setStatusFilter(null);
     setCompanyFilter(null);
@@ -503,11 +501,19 @@ export default function ContactsPage() {
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Name
                   </th>
+
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Email
+                  </th>
+
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Phone
                   </th>
+
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
@@ -532,6 +538,7 @@ export default function ContactsPage() {
                     {/* Render company dropdown through portal */}
                     {showCompanyFilter && <CompanyFilterDropdown />}
                   </th>
+
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
@@ -556,6 +563,7 @@ export default function ContactsPage() {
                     {/* Render status dropdown through portal */}
                     {showStatusFilter && <StatusFilterDropdown />}
                   </th>
+
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -563,6 +571,7 @@ export default function ContactsPage() {
                   </th>
                 </tr>
               </thead>
+
               <tbody className="bg-white divide-y divide-gray-200">
                 {contacts.length === 0 ? (
                   <tr>
@@ -597,18 +606,21 @@ export default function ContactsPage() {
                       key={contact.id}
                       className="hover:bg-gray-50 border-b border-gray-100">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-900">
-                            {contact.firstName} {contact.lastName}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            {contact.email}
-                          </span>
-                        </div>
+                        <span className="text-sm font-medium text-gray-900">
+                          {contact.firstName} {contact.lastName}
+                        </span>
                       </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-500">
+                          {contact.email}
+                        </span>
+                      </td>
+
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {contact.phone}
                       </td>
+
                       <td
                         className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
                           companyFilter === contact.company
@@ -617,6 +629,7 @@ export default function ContactsPage() {
                         }`}>
                         {contact.company}
                       </td>
+
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -631,6 +644,7 @@ export default function ContactsPage() {
                           {contact.status}
                         </span>
                       </td>
+
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">
                         <div className="flex justify-center items-center space-x-2">
                           <button
