@@ -9,6 +9,7 @@ import DOMPurify from "dompurify";
 import TextInput from "./TextInput";
 import SelectInput from "./SelectInput";
 import { cn } from "@/lib/utils/cn";
+import { useToast } from "@/app/components/ui/Toast";
 
 // Define the validation schema using Zod
 const contactSchema = z.object({
@@ -62,6 +63,7 @@ const STATUS_OPTIONS = [
 export default function ContactForm({ onSuccess, onCancel }: ContactFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const {
     register,
@@ -100,14 +102,29 @@ export default function ContactForm({ onSuccess, onCancel }: ContactFormProps) {
       // Submit sanitized data
       await createContact(sanitizedData);
       reset();
+
+      // Show success toast notification
+      showToast({
+        message: `Contact ${sanitizedData.firstName} ${sanitizedData.lastName} created successfully!`,
+        type: "success",
+      });
+
       onSuccess();
     } catch (error) {
       console.error("Error creating contact:", error);
-      setServerError(
+      const errorMessage =
         error instanceof Error
           ? error.message
-          : "Failed to create contact. Please try again."
-      );
+          : "Failed to create contact. Please try again.";
+
+      setServerError(errorMessage);
+
+      // Show error toast notification
+      showToast({
+        message: errorMessage,
+        type: "error",
+        duration: 4000, // Show error messages longer
+      });
     } finally {
       setIsSubmitting(false);
     }
