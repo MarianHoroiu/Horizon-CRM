@@ -21,6 +21,14 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const queryParam = searchParams.get("query") || "";
 
+    // Get pagination parameters
+    const pageParam = searchParams.get("page");
+    const limitParam = searchParams.get("limit");
+
+    const page = pageParam ? parseInt(pageParam) : 1;
+    const limit = limitParam ? parseInt(limitParam) : 10;
+    const skip = (page - 1) * limit;
+
     // Validate the input
     const result = searchSchema.safeParse({ query: queryParam });
 
@@ -43,23 +51,44 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Define the search conditions
+    const searchCondition = {
+      userId: user.id,
+      OR: [
+        { firstName: { contains: query } },
+        { lastName: { contains: query } },
+        { email: { contains: query } },
+        { company: { contains: query } },
+        { phone: { contains: query } },
+      ],
+    };
+
+    // Get total count for pagination
+    const totalContacts = await prisma.contact.count({
+      where: searchCondition,
+    });
+
     // Use Prisma's built-in sanitization and parameterized queries
     // to prevent SQL injection
     const contacts = await prisma.contact.findMany({
-      where: {
-        userId: user.id,
-        OR: [
-          { firstName: { contains: query } },
-          { lastName: { contains: query } },
-          { email: { contains: query } },
-          { company: { contains: query } },
-          { phone: { contains: query } },
-        ],
-      },
+      where: searchCondition,
       orderBy: { updatedAt: "desc" },
+      skip,
+      take: limit,
     });
 
-    return NextResponse.json({ contacts });
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalContacts / limit);
+
+    return NextResponse.json({
+      contacts,
+      pagination: {
+        total: totalContacts,
+        totalPages,
+        currentPage: page,
+        pageSize: limit,
+      },
+    });
   } catch (error) {
     console.error("Error searching contacts:", error);
     return NextResponse.json(

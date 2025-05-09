@@ -56,11 +56,15 @@ const handleResponse = async (response: Response) => {
 };
 
 // Search contacts with proper error handling
-export const searchContacts = async (query: string) => {
+export const searchContacts = async (
+  query: string,
+  page: number = 1,
+  limit: number = 10
+) => {
   try {
     // Encode the query parameter to prevent URL injection
     const encodedQuery = encodeURIComponent(query.trim());
-    const url = `/api/protected/contacts/search?query=${encodedQuery}`;
+    const url = `/api/protected/contacts/search?query=${encodedQuery}&page=${page}&limit=${limit}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -77,14 +81,17 @@ export const searchContacts = async (query: string) => {
 };
 
 // Get all contacts with proper error handling
-export const getContacts = async () => {
+export const getContacts = async (page: number = 1, limit: number = 10) => {
   try {
-    const response = await fetch("/api/protected/contacts", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await fetch(
+      `/api/protected/contacts?page=${page}&limit=${limit}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     return handleResponse(response);
   } catch (error) {

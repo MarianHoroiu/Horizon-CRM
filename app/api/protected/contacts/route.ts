@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     // Get the authenticated user session
     const session = await getServerSession();
@@ -21,15 +21,66 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get all contacts for the user
+    // Parse pagination parameters
+    const { searchParams } = new URL(request.url);
+    const contactId = searchParams.get("id");
+
+    // If a specific contact ID is requested, return just that contact
+    if (contactId) {
+      const contact = await prisma.contact.findFirst({
+        where: {
+          id: contactId,
+          userId: user.id,
+        },
+      });
+
+      if (!contact) {
+        return NextResponse.json(
+          { error: "Contact not found" },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({ contact });
+    }
+
+    // Handle pagination
+    const pageParam = searchParams.get("page");
+    const limitParam = searchParams.get("limit");
+
+    const page = pageParam ? parseInt(pageParam) : 1;
+    const limit = limitParam ? parseInt(limitParam) : 10;
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination
+    const totalContacts = await prisma.contact.count({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    // Get paginated contacts for the user
     const contacts = await prisma.contact.findMany({
       where: {
         userId: user.id,
       },
       orderBy: { updatedAt: "desc" },
+      skip,
+      take: limit,
     });
 
-    return NextResponse.json({ contacts });
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalContacts / limit);
+
+    return NextResponse.json({
+      contacts,
+      pagination: {
+        total: totalContacts,
+        totalPages,
+        currentPage: page,
+        pageSize: limit,
+      },
+    });
   } catch (error) {
     console.error("Error fetching contacts:", error);
     return NextResponse.json(
