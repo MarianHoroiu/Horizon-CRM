@@ -18,6 +18,7 @@ import AddContactModal from "@/app/components/form/AddContactModal";
 import EditContactModal from "@/app/components/form/EditContactModal";
 import DeleteConfirmationModal from "@/app/components/form/DeleteConfirmationModal";
 import { useToast } from "@/app/components/ui/Toast";
+import { useForm } from "react-hook-form";
 import {
   FiTrash2,
   FiSearch,
@@ -126,6 +127,14 @@ export default function ContactsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAddContactModal, setShowAddContactModal] = useState(false);
+
+  // Setup React Hook Form for search functionality
+  const { register, watch } = useForm({
+    defaultValues: {
+      search: "",
+    },
+  });
+  const searchInputValue = watch("search");
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -285,20 +294,18 @@ export default function ContactsPage() {
     };
   }, [debouncedSearch]);
 
-  // Handle search input changes
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Sanitize the input to prevent XSS
-    const sanitizedValue = value.replace(/<\/?[^>]+(>|$)/g, "");
-
+  // Watch for changes in the search input and trigger search
+  useEffect(() => {
     // Clear client-side filters when searching
     if (hasFiltersRef.current) {
       setStatusFilter(null);
       setCompanyFilter(null);
     }
 
+    // Sanitize the input to prevent XSS
+    const sanitizedValue = searchInputValue.replace(/<\/?[^>]+(>|$)/g, "");
     debouncedSearch(sanitizedValue);
-  };
+  }, [searchInputValue]);
 
   // Handle page change
   const handlePageChange = useCallback((pageNumber: number) => {
@@ -568,35 +575,37 @@ export default function ContactsPage() {
   return (
     <main className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
       {/* Page header */}
-      <div className="sm:flex sm:justify-between sm:items-center mb-8">
-        {/* Left: Title */}
-        <h1 className="text-2xl md:text-3xl text-slate-800 font-bold mb-4 sm:mb-0">
-          Contacts
-        </h1>
+      <div className="mb-8">
+        {/* Title */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl md:text-3xl text-slate-800 font-bold">
+            Contacts
+          </h1>
+        </div>
 
-        {/* Right: Actions */}
-        <div className="grid grid-flow-col sm:auto-cols-max justify-start sm:justify-end gap-2">
+        {/* Search and Add Contact */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Search */}
-          <div className="relative">
-            <label htmlFor="search-contacts" className="sr-only">
-              Search
-            </label>
-            <input
-              id="search-contacts"
-              className="block w-full p-2.5 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
-              type="search"
-              placeholder="Search by name, email, company..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-            />
-            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+          <div className="relative w-full max-w-md">
+            <div className="relative">
+              <input
+                id="search-contacts"
+                className="block w-full p-2.5 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
+                type="search"
+                placeholder="Search by name, email or company"
+                {...register("search")}
+              />
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <FiSearch className="w-5 h-5 text-gray-500" />
+              </div>
+            </div>
           </div>
 
-          {/* Add contact button */}
+          {/* Add Contact Button */}
           <button
-            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 w-full sm:w-auto"
             onClick={() => setShowAddContactModal(true)}>
-            <FiPlus className="w-4 h-4 mr-2" />
+            <FiPlus className="w-5 h-5 mr-2" />
             <span>Add Contact</span>
           </button>
         </div>
