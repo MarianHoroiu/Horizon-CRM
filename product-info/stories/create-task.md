@@ -1,9 +1,6 @@
 I need to create a template for task implementation documents.
 
-You need to create a new folder within the story folder. The folder name should match this pattern: `task-[story-number]-[task-number]-[task-name]`.
-For example, if the task is from story 01, and it's the first task with name "Create New Task Modal", the folder name should be `task-01-01-create-new-task-modal`.
-
-Within the folder, you need to create a new file to match the folder name. For example, if the folder name is `task-01-01-create-new-task-modal`, the file should be `task-01-01-create-new-task-modal.md`.
+You need to create a new file to match the folder name. For example, if the folder name starts with `story-01-[story name]`, the file should be `task-01-[task number]-[task name].md`, where `[task number]` is the task number in the story file.
 
 The markdown file needs to contain the following information:
 
@@ -58,12 +55,6 @@ Story [STORY_NUMBER]: [STORY_TITLE]
 - [CRITERION_4]
 - [CRITERION_5]
 
-## Testing Approach
-
-- [TEST_TYPE_1] for [FEATURE_1]
-- [TEST_TYPE_2] for [FEATURE_2]
-- [TEST_TYPE_3] for [FEATURE_3]
-
 ## Dependencies
 
 - [DEPENDENCY_1]
@@ -111,12 +102,6 @@ Create a modal dialog component for adding new tasks to the system.
 - Task is created when form is submitted successfully
 - User receives feedback on success/failure
 - Modal closes after successful submission
-
-## Testing Approach
-
-- Unit test for form validation
-- Integration test for API connection
-- UI test for modal opening/closing
 
 ## Dependencies
 
