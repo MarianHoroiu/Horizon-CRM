@@ -27,9 +27,7 @@ export default function DashboardLayout({
   return (
     <div className="flex flex-col min-h-screen">
       <Sidebar />
-      <div className="p-4 sm:ml-64">
-        <div className="mt-14">{children}</div>
-      </div>
+      <div className="p-4 sm:ml-64">{children}</div>
     </div>
   );
 }

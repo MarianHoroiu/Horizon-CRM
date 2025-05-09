@@ -28,7 +28,6 @@ import {
   FiChevronRight,
 } from "react-icons/fi";
 import { BsPencilSquare, BsFolder } from "react-icons/bs";
-import { cn } from "@/lib/utils/cn";
 
 type StatusType = "LEAD" | "PROSPECT" | "CUSTOMER" | "INACTIVE";
 
@@ -46,7 +45,7 @@ type Contact = {
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
-  onPageChange: (page: number) => void;
+  onPageChange: (_page: number) => void;
 }
 
 const Pagination = ({
@@ -305,7 +304,7 @@ export default function ContactsPage() {
     // Sanitize the input to prevent XSS
     const sanitizedValue = searchInputValue.replace(/<\/?[^>]+(>|$)/g, "");
     debouncedSearch(sanitizedValue);
-  }, [searchInputValue]);
+  }, [searchInputValue, debouncedSearch]);
 
   // Handle page change
   const handlePageChange = useCallback((pageNumber: number) => {
@@ -574,288 +573,289 @@ export default function ContactsPage() {
 
   return (
     <main className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
-      {/* Page header */}
-      <div className="mb-8">
-        {/* Title */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl md:text-3xl text-slate-800 font-bold">
-            Contacts
-          </h1>
-        </div>
+      {/* Title */}
+      <h1 className="text-2xl md:text-3xl text-slate-800 font-bold mb-6">
+        Contacts
+      </h1>
 
-        {/* Search and Add Contact */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* Search */}
-          <div className="relative w-full max-w-md">
-            <div className="relative">
-              <input
-                id="search-contacts"
-                className="block w-full p-2.5 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
-                type="search"
-                placeholder="Search by name, email or company"
-                {...register("search")}
-              />
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <FiSearch className="w-5 h-5 text-gray-500" />
-              </div>
-            </div>
-          </div>
-
-          {/* Add Contact Button */}
-          <button
-            className="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 w-full sm:w-auto"
-            onClick={() => setShowAddContactModal(true)}>
-            <FiPlus className="w-5 h-5 mr-2" />
-            <span>Add Contact</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Add Contact Modal */}
-      {isMounted && showAddContactModal && (
-        <AddContactModal
-          isOpen={showAddContactModal}
-          onClose={() => setShowAddContactModal(false)}
-          onSuccess={handleContactCreationSuccess}
-        />
-      )}
-
-      {/* Edit Contact Modal */}
-      {showEditContactModal && contactToEdit && (
-        <EditContactModal
-          isOpen={showEditContactModal}
-          onClose={handleEditCancel}
-          onSuccess={handleEditSuccess}
-          contact={contactToEdit}
-        />
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && contactToDelete && (
-        <DeleteConfirmationModal
-          isOpen={showDeleteModal}
-          onClose={handleDeleteCancel}
-          onConfirm={handleDeleteConfirm}
-          isDeleting={isDeleting}
-          title="Delete Contact"
-          message={`Are you sure you want to delete ${contactToDelete.firstName} ${contactToDelete.lastName}? This action cannot be undone.`}
-        />
-      )}
-
-      {/* Contacts table */}
-      <div className="bg-white shadow overflow-hidden rounded-lg">
-        {error && (
-          <div className="p-4 bg-red-100 text-red-700 border-l-4 border-red-500">
-            {error}
-          </div>
-        )}
-
-        {isLoading ? (
-          <div className="text-center p-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-            <p className="mt-2 text-sm text-gray-500">Loading contacts...</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto border rounded-lg">
-            {/* Fixed height container for the table */}
-            <div className="min-h-[700px] flex flex-col">
-              {/* Table takes available space but allows pagination to stay fixed at bottom */}
-              <div className="flex-grow">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
-                      </th>
-
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Phone
-                      </th>
-
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                        data-filter="company"
-                        ref={companyHeaderRef}>
-                        <div className="flex items-center gap-1">
-                          <span
-                            className={companyFilter ? "text-blue-600" : ""}>
-                            Company
-                          </span>
-                          <button
-                            onClick={() =>
-                              setShowCompanyFilter(!showCompanyFilter)
-                            }
-                            className={`${
-                              companyFilter
-                                ? "text-blue-600"
-                                : "text-gray-400 hover:text-gray-600"
-                            }`}
-                            aria-label="Filter by company">
-                            <FiFilter className="h-4 w-4" />
-                          </button>
-                        </div>
-
-                        {/* Render company dropdown through portal */}
-                        {showCompanyFilter && <CompanyFilterDropdown />}
-                      </th>
-
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                        data-filter="status"
-                        ref={statusHeaderRef}>
-                        <div className="flex items-center gap-1">
-                          <span className={statusFilter ? "text-blue-600" : ""}>
-                            Status
-                          </span>
-                          <button
-                            onClick={() =>
-                              setShowStatusFilter(!showStatusFilter)
-                            }
-                            className={`${
-                              statusFilter
-                                ? "text-blue-600"
-                                : "text-gray-400 hover:text-gray-600"
-                            }`}
-                            aria-label="Filter by status">
-                            <FiFilter className="h-4 w-4" />
-                          </button>
-                        </div>
-
-                        {/* Render status dropdown through portal */}
-                        {showStatusFilter && <StatusFilterDropdown />}
-                      </th>
-
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {contacts.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center">
-                          <div className="text-center">
-                            <BsFolder className="mx-auto h-12 w-12 text-gray-400" />
-                            <h3 className="mt-2 text-sm font-medium text-gray-900">
-                              No contacts found
-                            </h3>
-                            <p className="mt-1 text-sm text-gray-500">
-                              {searchQuery || statusFilter || companyFilter
-                                ? "Try adjusting your search or filters"
-                                : "Get started by creating a new contact"}
-                            </p>
-                            {!(
-                              searchQuery ||
-                              statusFilter ||
-                              companyFilter
-                            ) && (
-                              <div className="mt-6">
-                                <button
-                                  type="button"
-                                  onClick={() => setShowAddContactModal(true)}
-                                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
-                                  <FiPlus className="-ml-1 mr-2 h-5 w-5" />
-                                  Add Contact
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      <>
-                        {contacts.map(contact => (
-                          <tr
-                            key={contact.id}
-                            className="hover:bg-blue-100 border-b border-gray-100 odd:bg-white even:bg-gray-100">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className="text-sm font-medium text-gray-900">
-                                {contact.firstName} {contact.lastName}
-                              </span>
-                            </td>
-
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className="text-sm text-gray-500">
-                                {contact.email}
-                              </span>
-                            </td>
-
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {contact.phone}
-                            </td>
-
-                            <td
-                              className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                                companyFilter === contact.company
-                                  ? "text-indigo-600"
-                                  : "text-gray-900"
-                              }`}>
-                              {contact.company}
-                            </td>
-
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              <span
-                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                  contact.status === "LEAD"
-                                    ? "bg-blue-100 text-blue-800"
-                                    : contact.status === "PROSPECT"
-                                    ? "bg-green-100 text-green-800"
-                                    : contact.status === "CUSTOMER"
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-yellow-100 text-yellow-800"
-                                }`}>
-                                {contact.status}
-                              </span>
-                            </td>
-
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">
-                              <div className="flex justify-left gap-x-2">
-                                <button
-                                  onClick={() => handleEditClick(contact)}
-                                  className="text-indigo-600 hover:text-indigo-900 mr-2">
-                                  <BsPencilSquare className="h-5 w-5" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteClick(contact)}
-                                  className="text-red-600 hover:text-red-900">
-                                  <FiTrash2 className="h-5 w-5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination - fixed position at bottom of container */}
-              {totalPages > 1 && (
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        {/* Page header */}
+        <div className="mb-8 ">
+          {/* Search and Add Contact */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            {/* Search */}
+            <div className="relative w-full max-w-md">
+              <div className="relative">
+                <input
+                  id="search-contacts"
+                  className="block w-full p-2.5 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
+                  type="search"
+                  placeholder="Search by name, email or company"
+                  {...register("search")}
                 />
-              )}
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <FiSearch className="w-5 h-5 text-gray-500" />
+                </div>
+              </div>
             </div>
+
+            {/* Add Contact Button */}
+            <button
+              className="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 w-full sm:w-auto"
+              onClick={() => setShowAddContactModal(true)}>
+              <FiPlus className="w-5 h-5 mr-2" />
+              <span>Add Contact</span>
+            </button>
           </div>
+        </div>
+
+        {/* Add Contact Modal */}
+        {isMounted && showAddContactModal && (
+          <AddContactModal
+            isOpen={showAddContactModal}
+            onClose={() => setShowAddContactModal(false)}
+            onSuccess={handleContactCreationSuccess}
+          />
         )}
+
+        {/* Edit Contact Modal */}
+        {showEditContactModal && contactToEdit && (
+          <EditContactModal
+            isOpen={showEditContactModal}
+            onClose={handleEditCancel}
+            onSuccess={handleEditSuccess}
+            contact={contactToEdit}
+          />
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && contactToDelete && (
+          <DeleteConfirmationModal
+            isOpen={showDeleteModal}
+            onClose={handleDeleteCancel}
+            onConfirm={handleDeleteConfirm}
+            isDeleting={isDeleting}
+            title="Delete Contact"
+            message={`Are you sure you want to delete ${contactToDelete.firstName} ${contactToDelete.lastName}? This action cannot be undone.`}
+          />
+        )}
+
+        {/* Contacts table */}
+        <div className="bg-white shadow overflow-hidden rounded-lg">
+          {error && (
+            <div className="p-4 bg-red-100 text-red-700 border-l-4 border-red-500">
+              {error}
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="text-center p-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <p className="mt-2 text-sm text-gray-500">Loading contacts...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto border rounded-lg">
+              {/* Fixed height container for the table */}
+              <div className="min-h-[700px] flex flex-col">
+                {/* Table takes available space but allows pagination to stay fixed at bottom */}
+                <div className="flex-grow">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Name
+                        </th>
+
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Email
+                        </th>
+
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Phone
+                        </th>
+
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                          data-filter="company"
+                          ref={companyHeaderRef}>
+                          <div className="flex items-center gap-1">
+                            <span
+                              className={companyFilter ? "text-blue-600" : ""}>
+                              Company
+                            </span>
+                            <button
+                              onClick={() =>
+                                setShowCompanyFilter(!showCompanyFilter)
+                              }
+                              className={`${
+                                companyFilter
+                                  ? "text-blue-600"
+                                  : "text-gray-400 hover:text-gray-600"
+                              }`}
+                              aria-label="Filter by company">
+                              <FiFilter className="h-4 w-4" />
+                            </button>
+                          </div>
+
+                          {/* Render company dropdown through portal */}
+                          {showCompanyFilter && <CompanyFilterDropdown />}
+                        </th>
+
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                          data-filter="status"
+                          ref={statusHeaderRef}>
+                          <div className="flex items-center gap-1">
+                            <span
+                              className={statusFilter ? "text-blue-600" : ""}>
+                              Status
+                            </span>
+                            <button
+                              onClick={() =>
+                                setShowStatusFilter(!showStatusFilter)
+                              }
+                              className={`${
+                                statusFilter
+                                  ? "text-blue-600"
+                                  : "text-gray-400 hover:text-gray-600"
+                              }`}
+                              aria-label="Filter by status">
+                              <FiFilter className="h-4 w-4" />
+                            </button>
+                          </div>
+
+                          {/* Render status dropdown through portal */}
+                          {showStatusFilter && <StatusFilterDropdown />}
+                        </th>
+
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {contacts.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-12 text-center">
+                            <div className="text-center">
+                              <BsFolder className="mx-auto h-12 w-12 text-gray-400" />
+                              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                                No contacts found
+                              </h3>
+                              <p className="mt-1 text-sm text-gray-500">
+                                {searchQuery || statusFilter || companyFilter
+                                  ? "Try adjusting your search or filters"
+                                  : "Get started by creating a new contact"}
+                              </p>
+                              {!(
+                                searchQuery ||
+                                statusFilter ||
+                                companyFilter
+                              ) && (
+                                <div className="mt-6">
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowAddContactModal(true)}
+                                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                                    <FiPlus className="-ml-1 mr-2 h-5 w-5" />
+                                    Add Contact
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        <>
+                          {contacts.map(contact => (
+                            <tr
+                              key={contact.id}
+                              className="hover:bg-blue-100 border-b border-gray-100 odd:bg-white even:bg-gray-100">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="text-sm font-medium text-gray-900">
+                                  {contact.firstName} {contact.lastName}
+                                </span>
+                              </td>
+
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="text-sm text-gray-500">
+                                  {contact.email}
+                                </span>
+                              </td>
+
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {contact.phone}
+                              </td>
+
+                              <td
+                                className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
+                                  companyFilter === contact.company
+                                    ? "text-indigo-600"
+                                    : "text-gray-900"
+                                }`}>
+                                {contact.company}
+                              </td>
+
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                <span
+                                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                    contact.status === "LEAD"
+                                      ? "bg-blue-100 text-blue-800"
+                                      : contact.status === "PROSPECT"
+                                      ? "bg-green-100 text-green-800"
+                                      : contact.status === "CUSTOMER"
+                                      ? "bg-green-100 text-green-800"
+                                      : "bg-yellow-100 text-yellow-800"
+                                  }`}>
+                                  {contact.status}
+                                </span>
+                              </td>
+
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">
+                                <div className="flex justify-left gap-x-2">
+                                  <button
+                                    onClick={() => handleEditClick(contact)}
+                                    className="text-indigo-600 hover:text-indigo-900 mr-2">
+                                    <BsPencilSquare className="h-5 w-5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteClick(contact)}
+                                    className="text-red-600 hover:text-red-900">
+                                    <FiTrash2 className="h-5 w-5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination - fixed position at bottom of container */}
+                {totalPages > 1 && (
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );
