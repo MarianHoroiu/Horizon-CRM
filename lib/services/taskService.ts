@@ -150,18 +150,32 @@ export const getTasks = async (
 
 // Get a single task by ID
 export const getTaskById = async (
-  taskId: string
+  taskId: string,
+  skipCache: boolean = false,
+  signal?: AbortSignal
 ): Promise<SingleTaskResponse> => {
   try {
-    const response = await fetch(`/api/tasks/${taskId}`, {
+    // Add a cache-busting query parameter if skipCache is true
+    const cacheBuster = skipCache ? `?_=${Date.now()}` : "";
+    const response = await fetch(`/api/tasks/${taskId}${cacheBuster}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
+      // Skip cache when needed
+      cache: skipCache ? "no-store" : "default",
+      signal, // Add AbortSignal for cancellation
     });
 
     return handleResponse(response) as Promise<SingleTaskResponse>;
   } catch (error) {
+    // Don't log aborted requests as errors
+    if (error instanceof Error && error.name === "AbortError") {
+      console.log("Fetch aborted:", taskId);
+      // Rethrow the error so caller can handle it
+      throw error;
+    }
+
     console.error("Error fetching task:", error);
     throw error;
   }
@@ -190,19 +204,33 @@ export const createTask = async (
 // Update an existing task
 export const updateTask = async (
   taskId: string,
-  taskData: TaskData
+  taskData: TaskData,
+  skipCache: boolean = true, // Default to true to always bust cache after updates
+  signal?: AbortSignal
 ): Promise<SingleTaskResponse> => {
   try {
-    const response = await fetch(`/api/tasks/${taskId}`, {
+    // Add a cache-busting query parameter if skipCache is true
+    const cacheBuster = skipCache ? `?_=${Date.now()}` : "";
+    const response = await fetch(`/api/tasks/${taskId}${cacheBuster}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(taskData),
+      // Skip cache when needed
+      cache: skipCache ? "no-store" : "default",
+      signal, // Add AbortSignal for cancellation
     });
 
     return handleResponse(response) as Promise<SingleTaskResponse>;
   } catch (error) {
+    // Don't log aborted requests as errors
+    if (error instanceof Error && error.name === "AbortError") {
+      console.log("Update aborted:", taskId);
+      // Rethrow the error so caller can handle it
+      throw error;
+    }
+
     console.error("Error updating task:", error);
     throw error;
   }
