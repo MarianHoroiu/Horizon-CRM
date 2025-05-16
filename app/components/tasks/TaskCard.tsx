@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { FiEdit2 } from "react-icons/fi";
 
 interface Contact {
   id: string;

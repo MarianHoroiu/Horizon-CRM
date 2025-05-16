@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import NewTaskModal from "@/app/components/tasks/NewTaskModal";
+import EditTaskModal from "@/app/components/tasks/EditTaskModal";
 import TaskCard from "@/app/components/tasks/TaskCard";
 import { getTasks } from "@/lib/services/taskService";
 import { useToast } from "@/app/components/ui/Toast";
@@ -34,6 +35,7 @@ interface Task {
 
 export default function TasksPage() {
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+  const [showEditTaskModal, setShowEditTaskModal] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -117,6 +119,35 @@ export default function TasksPage() {
       showToast({
         message:
           "Task was created but failed to refresh the list. Please reload the page.",
+        type: "error",
+      });
+    }
+  };
+
+  // Function to handle task edit button click
+  const handleEditTask = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setShowEditTaskModal(true);
+  };
+
+  // Function to handle successful task update
+  const handleTaskUpdateSuccess = async () => {
+    setShowEditTaskModal(false);
+    setSelectedTaskId(null);
+
+    try {
+      // Force refresh of tasks with cache busting
+      await fetchTasks(true);
+
+      showToast({
+        message: "Task updated successfully and list updated",
+        type: "success",
+      });
+    } catch (error) {
+      console.error("Error refreshing tasks:", error);
+      showToast({
+        message:
+          "Task was updated but failed to refresh the list. Please reload the page.",
         type: "error",
       });
     }
@@ -210,6 +241,20 @@ export default function TasksPage() {
           onClose={() => setShowNewTaskModal(false)}
           onSuccess={handleTaskCreationSuccess}
           contacts={contacts}
+        />
+      )}
+
+      {/* Edit Task Modal */}
+      {showEditTaskModal && selectedTaskId && (
+        <EditTaskModal
+          isOpen={showEditTaskModal}
+          onClose={() => {
+            setShowEditTaskModal(false);
+            setSelectedTaskId(null);
+          }}
+          onSuccess={handleTaskUpdateSuccess}
+          contacts={contacts}
+          taskId={selectedTaskId}
         />
       )}
     </main>
