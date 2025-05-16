@@ -2,6 +2,7 @@
 
 import React from "react";
 import { FiEdit2 } from "react-icons/fi";
+import DeleteTaskButton from "./DeleteTaskButton";
 
 interface Contact {
   id: string;
@@ -78,6 +79,21 @@ export default function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
               Due {formatDate(task.dueDate)}
             </span>
           </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            className="p-2 text-blue-600 hover:text-blue-800 transition-colors"
+            onClick={() => onEdit(task.id)}
+            aria-label="Edit task">
+            <FiEdit2 className="h-5 w-5" />
+          </button>
+          {onDelete && (
+            <DeleteTaskButton
+              taskId={task.id}
+              taskTitle={task.title}
+              onSuccess={() => onDelete(task.id)}
+            />
+          )}
         </div>
       </div>
       <div className="mt-3 text-sm text-gray-500">

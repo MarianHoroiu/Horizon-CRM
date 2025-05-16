@@ -153,6 +153,20 @@ export default function TasksPage() {
     }
   };
 
+  // Function to handle task deletion
+  const handleTaskDeletion = async () => {
+    try {
+      // Force refresh of tasks with cache busting
+      await fetchTasks(true);
+    } catch (error) {
+      console.error("Error refreshing tasks after deletion:", error);
+      showToast({
+        message: "Failed to refresh the task list. Please reload the page.",
+        type: "error",
+      });
+    }
+  };
+
   return (
     <main className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
       {/* Title */}
@@ -203,7 +217,12 @@ export default function TasksPage() {
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {tasks.map(task => (
-              <TaskCard key={task.id} task={task} onEdit={handleEditTask} />
+              <TaskCard
+                key={task.id}
+                task={task}
+                onEdit={handleEditTask}
+                onDelete={handleTaskDeletion}
+              />
             ))}
           </div>
         )}

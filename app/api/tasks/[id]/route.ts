@@ -199,3 +199,55 @@ export async function PUT(
   }
 }
 
+// DELETE handler for deleting a task
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Get the current user
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const taskId = params.id;
+
+    // Check if the task exists and belongs to the user
+    const existingTask = await prisma.task.findFirst({
+      where: {
+        id: taskId,
+        userId,
+      },
+    });
+
+    if (!existingTask) {
+      return NextResponse.json(
+        { error: "Task not found or not accessible" },
+        { status: 404 }
+      );
+    }
+
+    // Delete the task
+    await prisma.task.delete({
+      where: {
+        id: taskId,
+      },
+    });
+
+    return NextResponse.json({
+      message: "Task deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting task:", error);
+    return NextResponse.json(
+      { error: "Failed to delete task" },
+      { status: 500 }
+    );
+  }
+}
