@@ -75,8 +75,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
    */
   const hideToast = () => {
     setVisible(false);
-    // We'll let AnimatePresence handle the timing of removal
-    setTimeout(() => setToast(null), 500);
   };
 
   useEffect(() => {
@@ -132,10 +130,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
 
       {/* Toast Container with Framer Motion */}
-      <AnimatePresence>
-        {toast && visible && (
-          <div className="fixed top-2 inset-x-0 flex justify-center z-50">
+      <div className="fixed top-2 inset-x-0 flex justify-center z-50 pointer-events-none">
+        <AnimatePresence mode="wait" onExitComplete={() => setToast(null)}>
+          {toast && visible && (
             <motion.div
+              className="pointer-events-auto"
               initial="initial"
               animate="animate"
               exit="exit"
@@ -147,9 +146,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               whileTap={{ scale: 0.98 }}>
               <Toast {...toast} onDismiss={hideToast} />
             </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+      </div>
     </ToastContext.Provider>
   );
 }

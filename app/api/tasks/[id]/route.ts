@@ -23,6 +23,11 @@ const taskUpdateSchema = z.object({
   contactId: z.string().min(1, { message: "Contact is required" }),
 });
 
+// Schema for status-only updates
+const statusUpdateSchema = z.object({
+  status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"]),
+});
+
 // GET handler for fetching a specific task
 export async function GET(
   request: NextRequest,
@@ -194,6 +199,101 @@ export async function PUT(
     console.error("Error updating task:", error);
     return NextResponse.json(
       { error: "Failed to update task" },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH handler for updating only a task's status
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Get the current user
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const taskId = params.id;
+
+    // Check if the task exists and belongs to the user
+    const existingTask = await prisma.task.findFirst({
+      where: {
+        id: taskId,
+        userId,
+      },
+    });
+
+    if (!existingTask) {
+      return NextResponse.json(
+        { error: "Task not found or not accessible" },
+        { status: 404 }
+      );
+    }
+
+    // Parse the request body
+    const body = await request.json();
+
+    // Validate the input - for PATCH we only require the status
+    const validationResult = statusUpdateSchema.safeParse(body);
+    if (!validationResult.success) {
+      const formattedErrors = validationResult.error.format();
+      console.warn(
+        "Task Status Update API - Validation failed:",
+        formattedErrors
+      );
+
+      return NextResponse.json(
+        { error: "Validation failed", details: formattedErrors },
+        { status: 400 }
+      );
+    }
+
+    const { status } = validationResult.data;
+
+    // Update only the task status
+    const updatedTask = await prisma.task.update({
+      where: {
+        id: taskId,
+      },
+      data: {
+        status,
+        updatedAt: new Date(),
+      },
+      include: {
+        assignedTo: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        contact: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            company: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({
+      message: "Task status updated successfully",
+      task: updatedTask,
+    });
+  } catch (error) {
+    console.error("Error updating task status:", error);
+    return NextResponse.json(
+      { error: "Failed to update task status" },
       { status: 500 }
     );
   }

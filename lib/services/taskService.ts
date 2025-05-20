@@ -7,6 +7,10 @@ export interface TaskData {
   contactId: string;
 }
 
+export interface TaskStatusData {
+  status: string;
+}
+
 export interface TaskResponse {
   tasks?: Array<{
     id: string;
@@ -243,6 +247,41 @@ export const updateTask = async (
     }
 
     console.error("Error updating task:", error);
+    throw error;
+  }
+};
+
+// Update only a task's status
+export const updateTaskStatus = async (
+  taskId: string,
+  status: string,
+  skipCache: boolean = true,
+  signal?: AbortSignal
+): Promise<SingleTaskResponse> => {
+  try {
+    // Add a cache-busting query parameter if skipCache is true
+    const cacheBuster = skipCache ? `?_=${Date.now()}` : "";
+    const response = await fetch(`/api/tasks/${taskId}${cacheBuster}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status }),
+      // Skip cache when needed
+      cache: skipCache ? "no-store" : "default",
+      signal, // Add AbortSignal for cancellation
+    });
+
+    return handleResponse(response) as Promise<SingleTaskResponse>;
+  } catch (error) {
+    // Don't log aborted requests as errors
+    if (error instanceof Error && error.name === "AbortError") {
+      console.log("Status update aborted:", taskId);
+      // Rethrow the error so caller can handle it
+      throw error;
+    }
+
+    console.error("Error updating task status:", error);
     throw error;
   }
 };

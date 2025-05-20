@@ -187,6 +187,29 @@ export default function TasksPage() {
     }
   };
 
+  // Function to handle task status changes
+  const handleTaskStatusChange = async (updatedTask: Task) => {
+    try {
+      // Refresh the task list to get the latest data
+      await fetchTasks(true);
+
+      showToast({
+        message: `Task status updated to ${updatedTask.status.replace(
+          "_",
+          " "
+        )}`,
+        type: "success",
+      });
+    } catch (error) {
+      console.error("Error refreshing tasks after status change:", error);
+      showToast({
+        message:
+          "Status was updated but failed to refresh the list. Please reload the page.",
+        type: "error",
+      });
+    }
+  };
+
   // Get title text based on active filter
   const getTasksTitle = () => {
     if (activeFilter === "ALL") return "All Tasks";
@@ -241,6 +264,7 @@ export default function TasksPage() {
                 task={task}
                 onEdit={handleEditTask}
                 onDelete={handleTaskDeletion}
+                onStatusChange={handleTaskStatusChange}
               />
             ))}
           </div>
