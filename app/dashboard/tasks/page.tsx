@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import NewTaskModal from "@/app/components/tasks/NewTaskModal";
 import EditTaskModal from "@/app/components/tasks/EditTaskModal";
 
@@ -10,6 +11,7 @@ import TaskSortControl, {
   SortField,
   SortOrder,
 } from "@/app/components/tasks/TaskSortControl";
+import { Pagination } from "@/app/components/ui/Pagination";
 import { getTasks } from "@/lib/services/taskService";
 import { useToast } from "@/app/components/ui/Toast";
 import { FiPlus } from "react-icons/fi";
@@ -39,7 +41,23 @@ interface Task {
   updatedAt: string;
 }
 
+interface PaginationInfo {
+  total: number;
+  pages: number;
+  page: number;
+  limit: number;
+}
+
 export default function TasksPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Get URL params or use defaults
+  const getInitialParam = (key: string, defaultValue: string): string => {
+    const param = searchParams.get(key);
+    return param || defaultValue;
+  };
+
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [showEditTaskModal, setShowEditTaskModal] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -47,21 +65,64 @@ export default function TasksPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<string>("ALL");
-  const [sortBy, setSortBy] = useState<string>("createdAt");
-  const [sortOrder, setSortOrder] = useState<string>("desc");
+
+  // State with URL param initialization
+  const [activeFilter, setActiveFilter] = useState(
+    getInitialParam("status", "ALL")
+  );
+  const [sortBy, setSortBy] = useState(getInitialParam("sortBy", "createdAt"));
+  const [sortOrder, setSortOrder] = useState<string>(
+    getInitialParam("order", "desc")
+  );
+  const [currentPage, setCurrentPage] = useState(
+    parseInt(getInitialParam("page", "1"), 10)
+  );
+  const [pageSize, setPageSize] = useState(
+    parseInt(getInitialParam("limit", "10"), 10)
+  );
+
   const [taskCounts, setTaskCounts] = useState<Record<string, number>>({});
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    total: 0,
+    pages: 1,
+    page: currentPage,
+    limit: pageSize,
+  });
+
   const { showToast } = useToast();
+
+  // Update URL when filter, sort or pagination changes
+  const updateUrlParams = useCallback(() => {
+    const params = new URLSearchParams();
+
+    // Only add params that are different from defaults
+    if (activeFilter !== "ALL") params.set("status", activeFilter);
+    if (sortBy !== "createdAt") params.set("sortBy", sortBy);
+    if (sortOrder !== "desc") params.set("order", sortOrder);
+    if (currentPage !== 1) params.set("page", currentPage.toString());
+    if (pageSize !== 10) params.set("limit", pageSize.toString());
+
+    const queryString = params.toString();
+    const url = queryString ? `?${queryString}` : "";
+
+    // Update URL without reloading the page
+    router.push(`/dashboard/tasks${url}`, { scroll: false });
+  }, [activeFilter, sortBy, sortOrder, currentPage, pageSize, router]);
+
+  // Update URL when parameters change
+  useEffect(() => {
+    updateUrlParams();
+  }, [activeFilter, sortBy, sortOrder, currentPage, pageSize, updateUrlParams]);
 
   // Fetch tasks from the API
   const fetchTasks = useCallback(
     async (skipCache = false) => {
       try {
         setIsLoading(true);
-        // Pass the active filter and sort params to the API
+        // Pass the active filter, sort params, and pagination to the API
         const response = await getTasks(
-          1,
-          50,
+          currentPage,
+          pageSize,
           skipCache,
           activeFilter,
           sortBy,
@@ -74,6 +135,11 @@ export default function TasksPage() {
           // Set task counts if available in response
           if (response.counts) {
             setTaskCounts(response.counts);
+          }
+
+          // Set pagination info
+          if (response.pagination) {
+            setPagination(response.pagination);
           }
         } else {
           console.error("Invalid tasks data format:", response);
@@ -90,7 +156,7 @@ export default function TasksPage() {
         setIsLoading(false);
       }
     },
-    [showToast, activeFilter, sortBy, sortOrder]
+    [showToast, activeFilter, sortBy, sortOrder, currentPage, pageSize]
   );
 
   // Fetch contacts for the task creation modal
@@ -115,7 +181,7 @@ export default function TasksPage() {
     }
   }, [showToast]);
 
-  // Fetch data on component mount and when filter or sort parameters change
+  // Fetch data on component mount and when filter, sort, or pagination parameters change
   useEffect(() => {
     const loadInitialData = async () => {
       await fetchTasks();
@@ -128,30 +194,23 @@ export default function TasksPage() {
     loadInitialData();
   }, [fetchTasks, fetchContacts, contacts.length]);
 
-  // Load sort preference from localStorage on mount
-  useEffect(() => {
-    const savedSortBy = localStorage.getItem("taskSortBy");
-    const savedSortOrder = localStorage.getItem("taskSortOrder");
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
-    if (savedSortBy) {
-      setSortBy(savedSortBy);
-    }
-
-    if (savedSortOrder) {
-      setSortOrder(savedSortOrder);
-    }
-  }, []);
-
-  // Save sort preference to localStorage when changed
-  useEffect(() => {
-    localStorage.setItem("taskSortBy", sortBy);
-    localStorage.setItem("taskSortOrder", sortOrder);
-  }, [sortBy, sortOrder]);
+  // Handle page size change
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
 
   // Handle filter change
   const handleFilterChange = (filter: string) => {
-    // Update the active filter state - this will trigger the useEffect due to dependency
+    // Update the active filter state
     setActiveFilter(filter);
+    // Reset to first page when changing filters
+    setCurrentPage(1);
     // Reset any error when changing filters
     setError(null);
   };
@@ -160,6 +219,8 @@ export default function TasksPage() {
   const handleSortChange = (field: SortField, order: SortOrder) => {
     setSortBy(field);
     setSortOrder(order);
+    // Reset to first page when changing sort
+    setCurrentPage(1);
   };
 
   // Function to handle successful task creation
@@ -256,6 +317,15 @@ export default function TasksPage() {
     return `${activeFilter.replace("_", " ")} Tasks`;
   };
 
+  // Format the showing text
+  const getShowingText = (range: {
+    start: number;
+    end: number;
+    total: number;
+  }) => {
+    return `Showing ${range.start}-${range.end} of ${range.total} tasks`;
+  };
+
   return (
     <main className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
       {/* Title */}
@@ -294,39 +364,22 @@ export default function TasksPage() {
           isLoading={isLoading}
           error={error}
           activeFilter={activeFilter}
+          pagination={pagination}
           onEdit={handleEditTask}
           onDelete={handleTaskDeletion}
           onStatusChange={handleTaskStatusChange}
         />
 
-        <div className="mt-6 flex justify-between items-center">
-          <div className="text-sm text-gray-500">
-            {tasks.length > 0
-              ? `Showing ${tasks.length} ${
-                  activeFilter !== "ALL"
-                    ? activeFilter.toLowerCase().replace("_", " ")
-                    : ""
-                } tasks`
-              : "No tasks to display"}
-          </div>
-          <div className="flex space-x-2">
-            <button
-              className="px-3 py-1 border rounded bg-gray-100 text-gray-600"
-              disabled>
-              Previous
-            </button>
-            <button
-              className="px-3 py-1 border rounded bg-blue-600 text-white"
-              disabled>
-              1
-            </button>
-            <button
-              className="px-3 py-1 border rounded bg-gray-100 text-gray-600"
-              disabled>
-              Next
-            </button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={pagination.pages}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          pageSizeOptions={[6, 10, 20, 50]}
+          totalItems={pagination.total}
+          showingText={getShowingText}
+        />
       </div>
 
       {/* New Task Modal */}

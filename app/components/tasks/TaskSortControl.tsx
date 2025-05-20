@@ -7,7 +7,7 @@ export type SortOrder = "asc" | "desc";
 interface TaskSortControlProps {
   sortBy: SortField;
   sortOrder: SortOrder;
-  onSortChange: (field: SortField, order: SortOrder) => void;
+  onSortChange: (_newField: SortField, _newOrder: SortOrder) => void;
 }
 
 export default function TaskSortControl({

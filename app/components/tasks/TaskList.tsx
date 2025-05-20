@@ -26,14 +26,22 @@ interface Task {
   updatedAt: string;
 }
 
+interface PaginationInfo {
+  total: number;
+  pages: number;
+  page: number;
+  limit: number;
+}
+
 interface TaskListProps {
   tasks: Task[];
   isLoading: boolean;
   error: string | null;
   activeFilter: string;
-  onEdit: (taskId: string) => void;
+  pagination?: PaginationInfo;
+  onEdit: (_taskId: string) => void;
   onDelete: () => void;
-  onStatusChange: (updatedTask: Task) => void;
+  onStatusChange: (_updatedTask: Task) => void;
 }
 
 export default function TaskList({
