@@ -1,8 +1,10 @@
 "use client";
 
 import React from "react";
-import { FiEdit2 } from "react-icons/fi";
+import { FiEdit2, FiUser, FiBriefcase } from "react-icons/fi";
 import DeleteTaskButton from "./DeleteTaskButton";
+import { Avatar } from "@/app/components/ui/Avatar";
+import { Badge } from "@/app/components/ui/Badge";
 
 interface Contact {
   id: string;
@@ -62,6 +64,29 @@ export default function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
     return status.replace("_", " ");
   };
 
+  // Generate user tooltip content
+  const userTooltip = (
+    <div>
+      <p className="font-semibold">
+        {task.assignedTo.firstName} {task.assignedTo.lastName}
+      </p>
+      <p className="text-xs text-gray-300">Assigned User</p>
+    </div>
+  );
+
+  // Generate contact tooltip content
+  const contactTooltip = (
+    <div>
+      <p className="font-semibold">
+        {task.contact.firstName} {task.contact.lastName}
+      </p>
+      {task.contact.company && (
+        <p className="text-xs text-gray-300">{task.contact.company}</p>
+      )}
+      <p className="text-xs text-gray-300">Contact</p>
+    </div>
+  );
+
   return (
     <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start">
@@ -96,14 +121,53 @@ export default function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
           )}
         </div>
       </div>
-      <div className="mt-3 text-sm text-gray-500">
-        <span className="font-medium">Contact:</span> {task.contact.firstName}{" "}
-        {task.contact.lastName}
-        {task.contact.company && ` (${task.contact.company})`}
-      </div>
-      <div className="mt-1 text-sm text-gray-500">
-        <span className="font-medium">Assigned to:</span>{" "}
-        {task.assignedTo.firstName} {task.assignedTo.lastName}
+
+      {/* Enhanced Contact and User Information */}
+      <div className="mt-4 flex flex-wrap items-center gap-4 border-t pt-3">
+        <div className="flex items-center gap-2">
+          <Avatar
+            firstName={task.contact.firstName}
+            lastName={task.contact.lastName}
+            size="sm"
+            tooltipContent={contactTooltip}
+          />
+          <div>
+            <Badge
+              text="Contact"
+              variant="contact"
+              size="sm"
+              icon={<FiBriefcase className="w-3 h-3" />}
+            />
+            <p className="text-sm font-medium mt-0.5">
+              {task.contact.firstName} {task.contact.lastName}
+              {task.contact.company && (
+                <span className="text-gray-500 ml-1">
+                  ({task.contact.company})
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Avatar
+            firstName={task.assignedTo.firstName}
+            lastName={task.assignedTo.lastName}
+            size="sm"
+            tooltipContent={userTooltip}
+          />
+          <div>
+            <Badge
+              text="Assigned To"
+              variant="user"
+              size="sm"
+              icon={<FiUser className="w-3 h-3" />}
+            />
+            <p className="text-sm font-medium mt-0.5">
+              {task.assignedTo.firstName} {task.assignedTo.lastName}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
