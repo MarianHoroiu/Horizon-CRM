@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { getServerSession } from "next-auth";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 // Define the validation schema
 const taskCreateSchema = z.object({
@@ -27,7 +29,7 @@ const taskCreateSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     // Get the current user
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
 
     if (!userId) {
@@ -41,20 +43,33 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get("page") || "1", 10);
     const limit = parseInt(url.searchParams.get("limit") || "10", 10);
+    const status = url.searchParams.get("status");
     const skip = (page - 1) * limit;
 
-    // Count total tasks for the user
-    const total = await prisma.task.count({
-      where: {
-        userId,
-      },
-    });
+    // Define where clause based on status parameter
+    const whereClause: Prisma.TaskWhereInput = { userId };
+    if (status) {
+      whereClause.status = status;
+    }
 
-    // Fetch tasks with pagination
+    // Count total tasks for each status category
+    const [
+      totalCount,
+      pendingCount,
+      inProgressCount,
+      completedCount,
+      cancelledCount,
+    ] = await Promise.all([
+      prisma.task.count({ where: { userId } }),
+      prisma.task.count({ where: { userId, status: "PENDING" } }),
+      prisma.task.count({ where: { userId, status: "IN_PROGRESS" } }),
+      prisma.task.count({ where: { userId, status: "COMPLETED" } }),
+      prisma.task.count({ where: { userId, status: "CANCELLED" } }),
+    ]);
+
+    // Fetch tasks with pagination and filtering
     const tasks = await prisma.task.findMany({
-      where: {
-        userId,
-      },
+      where: whereClause,
       include: {
         assignedTo: {
           select: {
@@ -79,13 +94,25 @@ export async function GET(request: NextRequest) {
       take: limit,
     });
 
+    // Count tasks that match the current filter
+    const filteredTotal = status
+      ? await prisma.task.count({ where: whereClause })
+      : totalCount;
+
     return NextResponse.json({
       tasks,
       pagination: {
-        total,
-        pages: Math.ceil(total / limit),
+        total: filteredTotal,
+        pages: Math.ceil(filteredTotal / limit),
         page,
         limit,
+      },
+      counts: {
+        TOTAL: totalCount,
+        PENDING: pendingCount,
+        IN_PROGRESS: inProgressCount,
+        COMPLETED: completedCount,
+        CANCELLED: cancelledCount,
       },
     });
   } catch (error) {
@@ -101,7 +128,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Get the current user
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
 
     if (!userId) {

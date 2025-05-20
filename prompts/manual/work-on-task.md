@@ -2,7 +2,7 @@ I'd like to start working on the task
 
 ## Request
 
-PLease help me to implement this task by:
+Please help me to implement this task by:
 
 1. Reviewing the task requirements and acceptance criteria
 2. Reviewing relevant existing code in the codebase

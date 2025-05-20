@@ -20,7 +20,7 @@ The current tasks page has limited functionality, only showing a static list of 
 1. Create a "New Task" modal form with all required fields
 2. Implement task editing functionality
 3. Add task deletion with confirmation
-4. Create status filter functionality that updates the UI
+4. Create task status filter functionality that updates the UI
 5. Enhance task card design to show contact and user information
 6. Add quick status change buttons/dropdown on each task
 7. Implement sorting options for the task list

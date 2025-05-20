@@ -36,6 +36,13 @@ export interface TaskResponse {
     page: number;
     limit: number;
   };
+  counts?: {
+    TOTAL: number;
+    PENDING: number;
+    IN_PROGRESS: number;
+    COMPLETED: number;
+    CANCELLED: number;
+  };
 }
 
 export interface SingleTaskResponse {
@@ -124,13 +131,17 @@ const handleResponse = async (response: Response): Promise<unknown> => {
 export const getTasks = async (
   page: number = 1,
   limit: number = 10,
-  skipCache: boolean = false
+  skipCache: boolean = false,
+  status?: string
 ): Promise<TaskResponse> => {
   try {
     // Add a cache-busting query parameter if skipCache is true
     const cacheBuster = skipCache ? `&_=${Date.now()}` : "";
+    // Add status filter if provided (and not 'ALL')
+    const statusFilter = status && status !== "ALL" ? `&status=${status}` : "";
+
     const response = await fetch(
-      `/api/tasks?page=${page}&limit=${limit}${cacheBuster}`,
+      `/api/tasks?page=${page}&limit=${limit}${statusFilter}${cacheBuster}`,
       {
         method: "GET",
         headers: {

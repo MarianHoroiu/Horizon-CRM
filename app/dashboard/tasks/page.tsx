@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import NewTaskModal from "@/app/components/tasks/NewTaskModal";
 import EditTaskModal from "@/app/components/tasks/EditTaskModal";
 import TaskCard from "@/app/components/tasks/TaskCard";
+import TaskStatusFilter from "@/app/components/tasks/TaskStatusFilter";
 import { getTasks } from "@/lib/services/taskService";
 import { useToast } from "@/app/components/ui/Toast";
 import { FiPlus } from "react-icons/fi";
@@ -41,6 +42,8 @@ export default function TasksPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string>("ALL");
+  const [taskCounts, setTaskCounts] = useState<Record<string, number>>({});
   const { showToast } = useToast();
 
   // Fetch tasks from the API
@@ -48,10 +51,16 @@ export default function TasksPage() {
     async (skipCache = false) => {
       try {
         setIsLoading(true);
-        const response = await getTasks(1, 50, skipCache);
+        // Pass the active filter to the API
+        const response = await getTasks(1, 50, skipCache, activeFilter);
 
         if (response.tasks && Array.isArray(response.tasks)) {
           setTasks(response.tasks);
+
+          // Set task counts if available in response
+          if (response.counts) {
+            setTaskCounts(response.counts);
+          }
         } else {
           console.error("Invalid tasks data format:", response);
           setTasks([]);
@@ -67,7 +76,7 @@ export default function TasksPage() {
         setIsLoading(false);
       }
     },
-    [showToast]
+    [showToast, activeFilter]
   );
 
   // Fetch contacts for the task creation modal
@@ -92,15 +101,26 @@ export default function TasksPage() {
     }
   }, [showToast]);
 
-  // Fetch data on component mount
+  // Fetch data on component mount and when filter changes
   useEffect(() => {
     const loadInitialData = async () => {
       await fetchTasks();
-      await fetchContacts();
+      // Only fetch contacts once on initial load
+      if (contacts.length === 0) {
+        await fetchContacts();
+      }
     };
 
     loadInitialData();
-  }, [fetchTasks, fetchContacts]);
+  }, [fetchTasks, fetchContacts, contacts.length, activeFilter]);
+
+  // Handle filter change
+  const handleFilterChange = (filter: string) => {
+    // Update the active filter state - this will trigger the useEffect due to dependency
+    setActiveFilter(filter);
+    // Reset any error when changing filters
+    setError(null);
+  };
 
   // Function to handle successful task creation
   const handleTaskCreationSuccess = async () => {
@@ -167,6 +187,12 @@ export default function TasksPage() {
     }
   };
 
+  // Get title text based on active filter
+  const getTasksTitle = () => {
+    if (activeFilter === "ALL") return "All Tasks";
+    return `${activeFilter.replace("_", " ")} Tasks`;
+  };
+
   return (
     <main className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
       {/* Title */}
@@ -176,7 +202,7 @@ export default function TasksPage() {
 
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">All Tasks</h2>
+          <h2 className="text-xl font-semibold">{getTasksTitle()}</h2>
           <button
             className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             onClick={() => setShowNewTaskModal(true)}>
@@ -185,23 +211,12 @@ export default function TasksPage() {
           </button>
         </div>
 
-        <div className="mb-6 flex flex-wrap gap-4">
-          <button className="px-4 py-2 bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 transition-colors">
-            All Tasks
-          </button>
-          <button className="px-4 py-2 bg-white text-gray-700 rounded-md hover:bg-gray-100 transition-colors border">
-            Pending
-          </button>
-          <button className="px-4 py-2 bg-white text-gray-700 rounded-md hover:bg-gray-100 transition-colors border">
-            In Progress
-          </button>
-          <button className="px-4 py-2 bg-white text-gray-700 rounded-md hover:bg-gray-100 transition-colors border">
-            Completed
-          </button>
-          <button className="px-4 py-2 bg-white text-gray-700 rounded-md hover:bg-gray-100 transition-colors border">
-            Cancelled
-          </button>
-        </div>
+        {/* Task Status Filter */}
+        <TaskStatusFilter
+          activeFilter={activeFilter}
+          setActiveFilter={handleFilterChange}
+          counts={taskCounts}
+        />
 
         {isLoading ? (
           <div className="py-10 text-center">
@@ -212,7 +227,11 @@ export default function TasksPage() {
           <div className="p-4 text-center text-red-500">{error}</div>
         ) : tasks.length === 0 ? (
           <div className="py-10 text-center text-gray-500">
-            No tasks found. Create your first task to get started.
+            {activeFilter === "ALL"
+              ? "No tasks found. Create your first task to get started."
+              : `No ${activeFilter
+                  .toLowerCase()
+                  .replace("_", " ")} tasks found.`}
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -230,7 +249,11 @@ export default function TasksPage() {
         <div className="mt-6 flex justify-between items-center">
           <div className="text-sm text-gray-500">
             {tasks.length > 0
-              ? `Showing ${tasks.length} tasks`
+              ? `Showing ${tasks.length} ${
+                  activeFilter !== "ALL"
+                    ? activeFilter.toLowerCase().replace("_", " ")
+                    : ""
+                } tasks`
               : "No tasks to display"}
           </div>
           <div className="flex space-x-2">
