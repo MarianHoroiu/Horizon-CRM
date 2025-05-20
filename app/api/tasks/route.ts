@@ -44,6 +44,8 @@ export async function GET(request: NextRequest) {
     const page = parseInt(url.searchParams.get("page") || "1", 10);
     const limit = parseInt(url.searchParams.get("limit") || "10", 10);
     const status = url.searchParams.get("status");
+    const sortBy = url.searchParams.get("sortBy");
+    const sortOrder = url.searchParams.get("sortOrder") || "asc";
     const skip = (page - 1) * limit;
 
     // Define where clause based on status parameter
@@ -67,6 +69,18 @@ export async function GET(request: NextRequest) {
       prisma.task.count({ where: { userId, status: "CANCELLED" } }),
     ]);
 
+    // Determine order by clause based on sortBy and sortOrder parameters
+    const orderBy: Prisma.TaskOrderByWithRelationInput = {};
+
+    if (sortBy === "dueDate") {
+      orderBy.dueDate = sortOrder.toLowerCase() as Prisma.SortOrder;
+    } else if (sortBy === "createdAt") {
+      orderBy.createdAt = sortOrder.toLowerCase() as Prisma.SortOrder;
+    } else {
+      // Default sorting
+      orderBy.createdAt = "desc";
+    }
+
     // Fetch tasks with pagination and filtering
     const tasks = await prisma.task.findMany({
       where: whereClause,
@@ -87,9 +101,7 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy,
       skip,
       take: limit,
     });

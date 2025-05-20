@@ -3,8 +3,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import NewTaskModal from "@/app/components/tasks/NewTaskModal";
 import EditTaskModal from "@/app/components/tasks/EditTaskModal";
-import TaskCard from "@/app/components/tasks/TaskCard";
+
 import TaskStatusFilter from "@/app/components/tasks/TaskStatusFilter";
+import TaskList from "@/app/components/tasks/TaskList";
+import TaskSortControl, {
+  SortField,
+  SortOrder,
+} from "@/app/components/tasks/TaskSortControl";
 import { getTasks } from "@/lib/services/taskService";
 import { useToast } from "@/app/components/ui/Toast";
 import { FiPlus } from "react-icons/fi";
@@ -43,6 +48,8 @@ export default function TasksPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
+  const [sortBy, setSortBy] = useState<string>("createdAt");
+  const [sortOrder, setSortOrder] = useState<string>("desc");
   const [taskCounts, setTaskCounts] = useState<Record<string, number>>({});
   const { showToast } = useToast();
 
@@ -51,8 +58,15 @@ export default function TasksPage() {
     async (skipCache = false) => {
       try {
         setIsLoading(true);
-        // Pass the active filter to the API
-        const response = await getTasks(1, 50, skipCache, activeFilter);
+        // Pass the active filter and sort params to the API
+        const response = await getTasks(
+          1,
+          50,
+          skipCache,
+          activeFilter,
+          sortBy,
+          sortOrder
+        );
 
         if (response.tasks && Array.isArray(response.tasks)) {
           setTasks(response.tasks);
@@ -76,7 +90,7 @@ export default function TasksPage() {
         setIsLoading(false);
       }
     },
-    [showToast, activeFilter]
+    [showToast, activeFilter, sortBy, sortOrder]
   );
 
   // Fetch contacts for the task creation modal
@@ -101,7 +115,7 @@ export default function TasksPage() {
     }
   }, [showToast]);
 
-  // Fetch data on component mount and when filter changes
+  // Fetch data on component mount and when filter or sort parameters change
   useEffect(() => {
     const loadInitialData = async () => {
       await fetchTasks();
@@ -112,7 +126,27 @@ export default function TasksPage() {
     };
 
     loadInitialData();
-  }, [fetchTasks, fetchContacts, contacts.length, activeFilter]);
+  }, [fetchTasks, fetchContacts, contacts.length]);
+
+  // Load sort preference from localStorage on mount
+  useEffect(() => {
+    const savedSortBy = localStorage.getItem("taskSortBy");
+    const savedSortOrder = localStorage.getItem("taskSortOrder");
+
+    if (savedSortBy) {
+      setSortBy(savedSortBy);
+    }
+
+    if (savedSortOrder) {
+      setSortOrder(savedSortOrder);
+    }
+  }, []);
+
+  // Save sort preference to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem("taskSortBy", sortBy);
+    localStorage.setItem("taskSortOrder", sortOrder);
+  }, [sortBy, sortOrder]);
 
   // Handle filter change
   const handleFilterChange = (filter: string) => {
@@ -120,6 +154,12 @@ export default function TasksPage() {
     setActiveFilter(filter);
     // Reset any error when changing filters
     setError(null);
+  };
+
+  // Handle sort change
+  const handleSortChange = (field: SortField, order: SortOrder) => {
+    setSortBy(field);
+    setSortOrder(order);
   };
 
   // Function to handle successful task creation
@@ -235,40 +275,29 @@ export default function TasksPage() {
         </div>
 
         {/* Task Status Filter */}
-        <TaskStatusFilter
-          activeFilter={activeFilter}
-          setActiveFilter={handleFilterChange}
-          counts={taskCounts}
-        />
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 mb-6">
+          <TaskStatusFilter
+            activeFilter={activeFilter}
+            setActiveFilter={handleFilterChange}
+            counts={taskCounts}
+          />
 
-        {isLoading ? (
-          <div className="py-10 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mr-2"></div>
-            <span className="text-gray-500">Loading tasks...</span>
-          </div>
-        ) : error ? (
-          <div className="p-4 text-center text-red-500">{error}</div>
-        ) : tasks.length === 0 ? (
-          <div className="py-10 text-center text-gray-500">
-            {activeFilter === "ALL"
-              ? "No tasks found. Create your first task to get started."
-              : `No ${activeFilter
-                  .toLowerCase()
-                  .replace("_", " ")} tasks found.`}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {tasks.map(task => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                onEdit={handleEditTask}
-                onDelete={handleTaskDeletion}
-                onStatusChange={handleTaskStatusChange}
-              />
-            ))}
-          </div>
-        )}
+          <TaskSortControl
+            sortBy={sortBy as SortField}
+            sortOrder={sortOrder as SortOrder}
+            onSortChange={handleSortChange}
+          />
+        </div>
+
+        <TaskList
+          tasks={tasks}
+          isLoading={isLoading}
+          error={error}
+          activeFilter={activeFilter}
+          onEdit={handleEditTask}
+          onDelete={handleTaskDeletion}
+          onStatusChange={handleTaskStatusChange}
+        />
 
         <div className="mt-6 flex justify-between items-center">
           <div className="text-sm text-gray-500">

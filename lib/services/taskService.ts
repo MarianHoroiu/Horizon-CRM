@@ -136,16 +136,22 @@ export const getTasks = async (
   page: number = 1,
   limit: number = 10,
   skipCache: boolean = false,
-  status?: string
+  status?: string,
+  sortBy?: string,
+  sortOrder?: string
 ): Promise<TaskResponse> => {
   try {
     // Add a cache-busting query parameter if skipCache is true
     const cacheBuster = skipCache ? `&_=${Date.now()}` : "";
     // Add status filter if provided (and not 'ALL')
     const statusFilter = status && status !== "ALL" ? `&status=${status}` : "";
+    // Add sorting params if provided
+    const sortParams = sortBy
+      ? `&sortBy=${sortBy}&sortOrder=${sortOrder || "asc"}`
+      : "";
 
     const response = await fetch(
-      `/api/tasks?page=${page}&limit=${limit}${statusFilter}${cacheBuster}`,
+      `/api/tasks?page=${page}&limit=${limit}${statusFilter}${sortParams}${cacheBuster}`,
       {
         method: "GET",
         headers: {
